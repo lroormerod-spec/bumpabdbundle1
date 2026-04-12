@@ -9,17 +9,12 @@ const COOKIE_NAME = "bb_session";
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Admin: Basic Auth first, session second
+  // Admin: check for admin cookie
   if (pathname.startsWith("/admin")) {
-    const basicAuth = request.headers.get("authorization");
-    const validCredentials = Buffer.from(
-      `admin:${process.env.ADMIN_PASSWORD || "Bmp&Bndl#2026!xK9"}`
-    ).toString("base64");
-    if (!basicAuth || basicAuth !== `Basic ${validCredentials}`) {
-      return new NextResponse("Admin authentication required", {
-        status: 401,
-        headers: { "WWW-Authenticate": 'Basic realm="Bump & Bundle Admin"' },
-      });
+    const adminCookie = request.cookies.get("bb_admin")?.value;
+    const adminPassword = process.env.ADMIN_PASSWORD || "Bmp&Bndl#2026!xK9";
+    if (adminCookie !== adminPassword) {
+      return NextResponse.redirect(new URL("/admin-login", request.url));
     }
     return NextResponse.next();
   }
@@ -42,5 +37,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/app/:path*", "/admin/:path*"],
+  matcher: ["/app/:path*", "/admin/:path*", "/admin"],
 };
