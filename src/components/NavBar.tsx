@@ -125,11 +125,13 @@ export default function NavBar({ user }: NavBarProps) {
               </DropdownMenu>
             ) : (
               <div className="flex items-center gap-2">
-                <Button size="sm" variant="ghost" className="text-muted-foreground" asChild>
-                  <Link href="/#sign-in">Sign in</Link>
+                <Button size="sm" variant="ghost" className="text-muted-foreground"
+                  onClick={() => document.getElementById('sign-in')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+                  Sign in
                 </Button>
-                <Button size="sm" className="bg-primary hover:bg-primary/90" asChild>
-                  <Link href="/#sign-in">Get started</Link>
+                <Button size="sm" className="bg-primary hover:bg-primary/90"
+                  onClick={() => document.getElementById('sign-in')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+                  Get started
                 </Button>
               </div>
             )}
