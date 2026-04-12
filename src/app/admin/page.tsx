@@ -12,8 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminPage() {
-  const session = await getSession();
-  if (!session?.isAdmin) redirect("/");
+  // Basic Auth handled by middleware — no session check needed
 
   const [usersCount] = await db.select({ count: count() }).from(users);
   const [registriesCount] = await db.select({ count: count() }).from(registries);
