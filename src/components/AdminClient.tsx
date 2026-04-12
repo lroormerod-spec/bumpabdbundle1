@@ -160,6 +160,20 @@ export default function AdminClient({ stats, users, posts: initialPosts, registr
   const [inviteLoading, setInviteLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  async function deleteUser(userId: number) {
+    if (!confirm("Delete this user and all their data? This cannot be undone.")) return;
+    try {
+      await fetch(`/api/admin/users?id=${userId}`, { method: "DELETE" });
+      // Remove from local state
+      (users as EnrichedUser[]).splice(users.findIndex(u => u.id === userId), 1);
+      setSelectedUser(null);
+      toast.success("User deleted");
+      window.location.reload();
+    } catch {
+      toast.error("Failed to delete user");
+    }
+  }
+
   async function createInvite() {
     if (!inviteEmail) return;
     setInviteLoading(true);
@@ -496,9 +510,14 @@ export default function AdminClient({ stats, users, posts: initialPosts, registr
                           <td className="p-3 text-muted-foreground hidden lg:table-cell">{relativeTime(user.lastActive)}</td>
                           <td className="p-3"><SegmentBadge segment={user.segment} /></td>
                           <td className="p-3">
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectedUser(user)}>
-                              <ChevronRight className="w-3.5 h-3.5" />
-                            </Button>
+                            <div className="flex items-center gap-1">
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => deleteUser(user.id)}>
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectedUser(user)}>
+                                <ChevronRight className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       ))}

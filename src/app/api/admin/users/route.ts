@@ -86,3 +86,26 @@ export async function GET() {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
+import { NextRequest } from "next/server";
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = parseInt(searchParams.get("id") || "");
+    if (!id) return NextResponse.json({ error: "ID required" }, { status: 400 });
+
+    // Delete user's items via registries, then registries, then user
+    const userRegistries = await db.select({ id: registries.id }).from(registries).where(eq(registries.userId, id));
+    for (const reg of userRegistries) {
+      await db.delete(items).where(eq(items.registryId, reg.id));
+    }
+    await db.delete(registries).where(eq(registries.userId, id));
+    await db.delete(users).where(eq(users.id, id));
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("DELETE /api/admin/users:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
