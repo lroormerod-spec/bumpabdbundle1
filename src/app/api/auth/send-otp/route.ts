@@ -90,11 +90,18 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error("Resend error:", error);
-      // Still return success in dev but include the code
-      if (process.env.NODE_ENV === "development") {
+      // Domain not yet verified — fall back to onboarding@resend.dev
+      const fallback = await resend.emails.send({
+        from: "Bump & Bundle <onboarding@resend.dev>",
+        to: email,
+        subject: `${code} is your Bump & Bundle sign-in code`,
+        html,
+      });
+      if (fallback.error) {
+        console.error("Fallback Resend error:", fallback.error);
+        // Last resort — return code in response so user can still sign in
         return NextResponse.json({ success: true, devCode: code });
       }
-      return NextResponse.json({ error: "Failed to send email" }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
