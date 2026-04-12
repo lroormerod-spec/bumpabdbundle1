@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Users, ShoppingBag, FileText, BarChart3, Plus, Trash2, Edit, Eye, EyeOff,
-  Loader2, X, Download, Search, MousePointerClick, Pencil, Check, FileEdit, ChevronRight, ArrowLeft
+  Loader2, X, Download, Search, MousePointerClick, Pencil, Check, Copy, FileEdit, ChevronRight, ArrowLeft
 } from "lucide-react";
 import RichEditor from "@/components/RichEditor";
 import { toast } from "sonner";
@@ -153,6 +153,38 @@ export default function AdminClient({ stats, users, posts: initialPosts, registr
   const [crmSearch, setCrmSearch] = useState("");
   const [crmSegment, setCrmSegment] = useState("all");
   const [selectedUser, setSelectedUser] = useState<EnrichedUser | null>(null);
+  const [showInvite, setShowInvite] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteName, setInviteName] = useState("");
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  async function createInvite() {
+    if (!inviteEmail) return;
+    setInviteLoading(true);
+    try {
+      const res = await fetch("/api/admin/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: inviteEmail, name: inviteName }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setInviteLink(data.magicUrl);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to create invite");
+    } finally {
+      setInviteLoading(false);
+    }
+  }
+
+  async function copyLink() {
+    if (!inviteLink) return;
+    await navigator.clipboard.writeText(inviteLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
 
   // Page content state
   const [pageContentItems, setPageContentItems] = useState(initialPageContent);
@@ -378,12 +410,55 @@ export default function AdminClient({ stats, users, posts: initialPosts, registr
                     <Download className="w-4 h-4 mr-1.5" />Export CSV
                   </a>
                 </Button>
+                <Button onClick={() => { setShowInvite(!showInvite); setInviteLink(null); setInviteEmail(""); setInviteName(""); }}>
+                  <Plus className="w-4 h-4 mr-1.5" />Invite user
+                </Button>
                 {crmSegment !== "all" && (
                   <Button variant="ghost" size="sm" onClick={() => setCrmSegment("all")}>
                     <X className="w-3.5 h-3.5 mr-1" />Clear filter
                   </Button>
                 )}
               </div>
+
+              {/* Invite panel */}
+              {showInvite && (
+                <div className="border border-primary/30 rounded-xl p-5 bg-primary/5 space-y-4">
+                  <h3 className="font-semibold">Invite a user</h3>
+                  {!inviteLink ? (
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label>Name (optional)</Label>
+                        <Input placeholder="e.g. Sarah Jones" value={inviteName} onChange={e => setInviteName(e.target.value)} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Email address</Label>
+                        <Input type="email" placeholder="sarah@example.com" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} />
+                      </div>
+                      <div className="sm:col-span-2 flex gap-2">
+                        <Button onClick={createInvite} disabled={inviteLoading || !inviteEmail}>
+                          {inviteLoading && <Loader2 className="w-4 h-4 animate-spin mr-1.5" />}
+                          Generate invite link
+                        </Button>
+                        <Button variant="outline" onClick={() => setShowInvite(false)}>Cancel</Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="text-sm text-muted-foreground">Share this link with <strong>{inviteEmail}</strong> — it logs them straight in, no email needed. Valid for 7 days, one use only.</p>
+                      <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-3 py-2">
+                        <code className="text-xs flex-1 truncate text-muted-foreground">{inviteLink}</code>
+                        <Button size="sm" variant="outline" onClick={copyLink}>
+                          {copied ? <><Check className="w-3.5 h-3.5 mr-1" />Copied!</> : <><Copy className="w-3.5 h-3.5 mr-1" />Copy</>}
+                        </Button>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => { setInviteLink(null); setInviteEmail(""); setInviteName(""); }}>Generate another</Button>
+                        <Button variant="ghost" size="sm" onClick={() => setShowInvite(false)}>Done</Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* User table */}
               <div className="rounded-xl border border-border overflow-hidden">

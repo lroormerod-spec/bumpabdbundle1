@@ -147,6 +147,33 @@ export const pageContent = pgTable("page_content", {
 export type PageContent = typeof pageContent.$inferSelect;
 
 // Bump Photos
+export const magicLinks = pgTable("magic_links", {
+  id: serial("id").primaryKey(),
+  token: text("token").notNull().unique(),
+  email: text("email").notNull(),
+  userId: integer("user_id"),
+  used: boolean("used").notNull().default(false),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+export type MagicLink = typeof magicLinks.$inferSelect;
+
+export const affiliateConfig = pgTable("affiliate_config", {
+  id: serial("id").primaryKey(),
+  retailerName: text("retailer_name").notNull(),
+  retailerDomain: text("retailer_domain").notNull().unique(),
+  network: text("network").notNull(), // 'awin', 'amazon_associates', 'rakuten', 'cj', 'manual'
+  publisherId: text("publisher_id"),  // your ID on the network (same across retailers)
+  programmeId: text("programme_id"),  // retailer-specific programme ID
+  trackingParam: text("tracking_param"), // custom override if needed
+  customUrlTemplate: text("custom_url_template"), // full template e.g. for Rakuten
+  active: boolean("active").notNull().default(false),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+export type AffiliateConfig = typeof affiliateConfig.$inferSelect;
+
 export const bumpPhotos = pgTable("bump_photos", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
