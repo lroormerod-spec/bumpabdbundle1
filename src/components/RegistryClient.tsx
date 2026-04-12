@@ -324,42 +324,47 @@ export default function RegistryClient({ registry, initialItems }: Props) {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="search">
-            <Search className="w-4 h-4 mr-1.5" />
-            Search products
-          </TabsTrigger>
-          <TabsTrigger value="list">
-            <Package className="w-4 h-4 mr-1.5" />
-            My list ({myItems.length})
-          </TabsTrigger>
-        </TabsList>
+
+        {/* Sticky header — tabs + search bar */}
+        <div className="sticky top-16 z-30 bg-background/95 backdrop-blur border-b border-border -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 pb-3 pt-3">
+          <TabsList className="mb-3">
+            <TabsTrigger value="search">
+              <Search className="w-4 h-4 mr-1.5" />
+              Search products
+            </TabsTrigger>
+            <TabsTrigger value="list">
+              <Package className="w-4 h-4 mr-1.5" />
+              My list ({myItems.length})
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Search input — only shown on search tab */}
+          {activeTab === "search" && (
+            <div className="relative">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+              <Input
+                ref={inputRef}
+                placeholder="Search for baby items… e.g. Bugaboo pram"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="h-12 pl-10 pr-10 text-base rounded-xl border-border focus-visible:ring-primary/50"
+                autoComplete="off"
+              />
+              {searchQuery.length > 0 && (
+                <button
+                  onClick={clearSearch}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-muted-foreground/20 hover:bg-muted-foreground/30 flex items-center justify-center transition-colors"
+                  aria-label="Clear search"
+                >
+                  <X className="w-3 h-3 text-muted-foreground" />
+                </button>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* ─── SEARCH TAB ─── */}
-        <TabsContent value="search" className="mt-6 space-y-5">
-
-          {/* Search input */}
-          <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-            <Input
-              ref={inputRef}
-              placeholder="Search for baby items… e.g. Bugaboo pram"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="h-12 pl-10 pr-10 text-base rounded-xl border-border focus-visible:ring-primary/50"
-              autoComplete="off"
-            />
-            {/* Clear button */}
-            {searchQuery.length > 0 && (
-              <button
-                onClick={clearSearch}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-muted-foreground/20 hover:bg-muted-foreground/30 flex items-center justify-center transition-colors"
-                aria-label="Clear search"
-              >
-                <X className="w-3 h-3 text-muted-foreground" />
-              </button>
-            )}
-          </div>
+        <TabsContent value="search" className="mt-4 space-y-5">
 
           {/* Popular searches — shown when input is empty */}
           {showIdleState && (
