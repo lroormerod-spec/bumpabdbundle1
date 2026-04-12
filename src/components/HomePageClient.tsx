@@ -192,14 +192,13 @@ function HowItWorks({ subtitle }: { subtitle: string }) {
           {/* Left — step content */}
           <div className="flex-1 space-y-6 w-full">
             {/* Step tabs — compact on mobile */}
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            <div className="flex flex-wrap gap-2">
               {HOW_STEPS.map((s, i) => (
                 <button key={i} onClick={() => handleTabClick(i)}
-                  className="flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition-all duration-300 flex-shrink-0"
+                  className="flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition-all duration-300"
                   style={{ background: i === active ? step.color : "transparent", color: i === active ? "white" : "hsl(var(--muted-foreground))", border: `2px solid ${i === active ? step.color : "hsl(var(--border))"}` }}>
                   <span className="opacity-70">{s.number}</span>
-                  <span className="hidden sm:inline">{s.title}</span>
-                  <span className="sm:hidden">{s.title.split(" ")[0]}</span>
+                  <span>{s.title}</span>
                 </button>
               ))}
             </div>
@@ -379,9 +378,9 @@ export default function HomePageClient({
       {/* Hero */}
       <section id="sign-in" className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-secondary/60 via-background to-background" />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            {/* Left — headline */}
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-28">
+          <div className="flex flex-col-reverse lg:grid lg:grid-cols-2 gap-8 lg:gap-16 lg:items-center">
+            {/* Left — headline (shown second on mobile, first on desktop) */}
             <div className="space-y-6">
               <Badge variant="secondary" className="text-primary border-primary/20 bg-primary/10">
                 🇬🇧 {heroBadge}

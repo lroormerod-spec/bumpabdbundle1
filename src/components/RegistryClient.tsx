@@ -57,6 +57,33 @@ const POPULAR_SEARCHES = [
   "Bouncer",
 ];
 
+const CATEGORIES = [
+  { label: "All", emoji: "" },
+  { label: "Travel", emoji: "🚗" },
+  { label: "Sleep", emoji: "😴" },
+  { label: "Feeding", emoji: "🍼" },
+  { label: "Safety", emoji: "🛡️" },
+  { label: "Play", emoji: "🧸" },
+  { label: "Clothing", emoji: "👕" },
+  { label: "Nursery", emoji: "🛏️" },
+  { label: "Bathing", emoji: "🛁" },
+  { label: "Health", emoji: "❤️" },
+];
+
+function guessCategory(title: string, query: string): string {
+  const text = (title + " " + query).toLowerCase();
+  if (/pram|stroller|pushchair|car seat|travel|buggy|carrier/.test(text)) return "Travel";
+  if (/sleep|crib|bassinet|moses|cot|monitor|white noise|swaddle/.test(text)) return "Sleep";
+  if (/bottle|breast|feeding|formula|bib|highchair|weaning|sippy/.test(text)) return "Feeding";
+  if (/gate|lock|monitor|safe|safety|thermometer|medicine/.test(text)) return "Safety";
+  if (/toy|play|bouncer|gym|rattle|teether|activity/.test(text)) return "Play";
+  if (/clothes|vest|babygrow|sleepsuit|outfit|clothing|hat|socks/.test(text)) return "Clothing";
+  if (/nursery|lamp|mobile|decor|storage|wardrobe|chest|drawer/.test(text)) return "Nursery";
+  if (/bath|towel|wash|shampoo|nappy|nappies|wipes|changing/.test(text)) return "Bathing";
+  if (/health|vitamin|cream|lotion|nappy cream|baby oil/.test(text)) return "Health";
+  return "Other";
+}
+
 function formatPrice(price: number | null) {
   if (!price) return null;
   return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(price);
@@ -120,6 +147,7 @@ export default function RegistryClient({ registry, initialItems }: Props) {
   const [hasSearched, setHasSearched] = useState(false);
   const [resultsVisible, setResultsVisible] = useState(false);
   const [myItems, setMyItems] = useState<RegistryItem[]>(initialItems);
+  const [activeCategory, setActiveCategory] = useState("All");
   const [adding, setAdding] = useState<string | null>(null);
   const [showShare, setShowShare] = useState(false);
   const [activeTab, setActiveTab] = useState("search");
@@ -214,6 +242,7 @@ export default function RegistryClient({ registry, initialItems }: Props) {
           image: result.image,
           retailer: result.retailer,
           url: result.link,
+          category: guessCategory(result.title, committedQuery),
         }),
       });
       const data = await res.json();
@@ -507,6 +536,26 @@ export default function RegistryClient({ registry, initialItems }: Props) {
 
         {/* ─── MY LIST TAB ─── */}
         <TabsContent value="list" className="mt-6">
+          {/* Category filter */}
+          {myItems.length > 0 && (
+            <div className="flex gap-2 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
+              {CATEGORIES.map(cat => (
+                <button
+                  key={cat.label}
+                  onClick={() => setActiveCategory(cat.label)}
+                  className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold flex-shrink-0 transition-all ${
+                    activeCategory === cat.label
+                      ? "bg-primary text-white"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  }`}
+                >
+                  {cat.emoji && <span>{cat.emoji}</span>}
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+          )}
+
           {myItems.length === 0 ? (
             <div className="text-center py-20 text-muted-foreground">
               <ShoppingBag className="w-12 h-12 mx-auto mb-4 text-primary/30" />
@@ -519,7 +568,7 @@ export default function RegistryClient({ registry, initialItems }: Props) {
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-              {myItems.map((item) => (
+              {myItems.filter(item => activeCategory === "All" || item.category === activeCategory).map((item) => (
                 <Card key={item.id} className={`overflow-hidden transition-all ${
                   item.isPurchased ? "opacity-60" : "hover:shadow-md"
                 }`}>
