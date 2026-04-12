@@ -399,7 +399,12 @@ export default function RegistryClient({ registry, initialItems }: Props) {
                       </Button>
                       {result.link && (
                         <Button size="sm" variant="outline" asChild>
-                          <a href={result.link} target="_blank" rel="noopener noreferrer" title="View on retailer site">
+                          <a
+                            href={`/go?url=${encodeURIComponent(result.link)}&retailer=${encodeURIComponent(result.retailer ?? "")}&title=${encodeURIComponent(result.title)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="View on retailer site"
+                          >
                             <ExternalLink className="w-3.5 h-3.5" />
                           </a>
                         </Button>
@@ -507,7 +512,12 @@ export default function RegistryClient({ registry, initialItems }: Props) {
                   <div className="flex items-center gap-1 flex-shrink-0">
                     {item.url && (
                       <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                        <a href={item.url} target="_blank" rel="noopener noreferrer" title="View on retailer site">
+                        <a
+                          href={`/go?url=${encodeURIComponent(item.url)}&retailer=${encodeURIComponent(item.retailer ?? "")}&title=${encodeURIComponent(item.title)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="View on retailer site"
+                        >
                           <ExternalLink className="w-3.5 h-3.5" />
                         </a>
                       </Button>

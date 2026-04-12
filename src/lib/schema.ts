@@ -123,6 +123,29 @@ export const savedNames = pgTable("saved_names", {
 
 export type SavedName = typeof savedNames.$inferSelect;
 
+// Affiliate Clicks
+export const affiliateClicks = pgTable("affiliate_clicks", {
+  id: serial("id").primaryKey(),
+  retailer: text("retailer"),
+  productTitle: text("product_title"),
+  originalUrl: text("original_url"),
+  finalUrl: text("final_url"),
+  userId: integer("user_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type AffiliateClick = typeof affiliateClicks.$inferSelect;
+
+// Page Content
+export const pageContent = pgTable("page_content", {
+  id: serial("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type PageContent = typeof pageContent.$inferSelect;
+
 // Bump Photos
 export const bumpPhotos = pgTable("bump_photos", {
   id: serial("id").primaryKey(),

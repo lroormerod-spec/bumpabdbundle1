@@ -37,28 +37,10 @@ const UK_RETAILERS = [
   "costco.co.uk", "nuby.co.uk", "bebebebe.co.uk", "babydan.co.uk",
 ];
 
-const FAQS = [
-  {
-    q: "Is Bump & Bundle free to use?",
-    a: "Yes, completely free. Create your registry, share it with family, and compare prices across UK retailers at no cost.",
-  },
-  {
-    q: "Which UK retailers do you cover?",
-    a: "We search 50+ UK retailers including Amazon, John Lewis, Mamas & Papas, Smyths, Argos, Boots, Next, Very, Tesco, ASDA and many more — any retailer listed on Google Shopping.",
-  },
-  {
-    q: "How do price drop alerts work?",
-    a: "Enable alerts on any item and we'll check the price regularly. When a price drops, you'll see it highlighted on your dashboard.",
-  },
-  {
-    q: "Can gift givers buy items anonymously?",
-    a: "Yes. When someone purchases an item from your shared registry, they can mark it as bought so others don't duplicate gifts.",
-  },
-  {
-    q: "How do I share my registry?",
-    a: "Each registry gets a unique shareable link. Share via WhatsApp, email, or copy the link — no account needed for gift givers.",
-  },
-];
+interface Faq {
+  q: string;
+  a: string;
+}
 
 // ── Phone mockup screens ────────────────────────────────────────────────────
 
@@ -173,7 +155,7 @@ const HOW_STEPS = [
   { number: "03", color: "hsl(25,85%,55%)", colorLight: "hsl(25,85%,96%)", title: "Share with everyone", subtitle: "One link. Zero duplicates.", desc: "Share your registry via WhatsApp, email or anywhere else. Friends and family can see what's needed and mark gifts as bought — so nobody doubles up.", phone: <PhoneShare /> },
 ];
 
-function HowItWorks() {
+function HowItWorks({ subtitle }: { subtitle: string }) {
   const [active, setActive] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -204,7 +186,7 @@ function HowItWorks() {
         <div className="text-center mb-14">
           <div className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold mb-4" style={{ background: "hsl(152,28%,92%)", color: "hsl(152,28%,32%)" }}>Up and running in minutes</div>
           <h2 className="text-3xl font-bold mb-3">How Bump &amp; Bundle works</h2>
-          <p className="text-muted-foreground">From first search to first gift — the whole journey takes under 3 minutes.</p>
+          <p className="text-muted-foreground">{subtitle}</p>
         </div>
         <div className="flex flex-col-reverse lg:flex-row items-center gap-12 lg:gap-16">
           {/* Left — step content */}
@@ -273,7 +255,33 @@ function HowItWorks() {
   );
 }
 
-export default function HomePageClient({ latestPosts }: { latestPosts: Post[] }) {
+interface HomePageClientProps {
+  latestPosts: Post[];
+  heroHeadline?: string;
+  heroSubtext?: string;
+  heroBadge?: string;
+  socialProof?: string;
+  howItWorksSubtitle?: string;
+  faqs?: Faq[];
+}
+
+const DEFAULT_FAQS: Faq[] = [
+  { q: "Is Bump & Bundle free to use?", a: "Yes, completely free. Create your registry, share it with family, and compare prices across UK retailers at no cost." },
+  { q: "Which UK retailers do you cover?", a: "We search 50+ UK retailers including Amazon, John Lewis, Mamas & Papas, Smyths, Argos, Boots, Next, Very, Tesco, ASDA and many more — any retailer listed on Google Shopping." },
+  { q: "How do price drop alerts work?", a: "Enable alerts on any item and we'll check the price regularly. When a price drops, you'll see it highlighted on your dashboard." },
+  { q: "Can gift givers buy items anonymously?", a: "Yes. When someone purchases an item from your shared registry, they can mark it as bought so others don't duplicate gifts." },
+  { q: "How do I share my registry?", a: "Each registry gets a unique shareable link. Share via WhatsApp, email, or copy the link — no account needed for gift givers." },
+];
+
+export default function HomePageClient({
+  latestPosts,
+  heroHeadline = "Every baby deserves the perfect welcome gift",
+  heroSubtext = "Create your dream baby registry in minutes. Compare prices across 50+ UK retailers, share with loved ones, and get notified when prices drop.",
+  heroBadge = "UK's favourite baby registry",
+  socialProof = "Loved by 12,000+ UK families",
+  howItWorksSubtitle = "From first search to first gift — the whole journey takes under 3 minutes.",
+  faqs = DEFAULT_FAQS,
+}: HomePageClientProps) {
   const router = useRouter();
   const [otpStep, setOtpStep] = useState<"email" | "code" | "register">("email");
   const [email, setEmail] = useState("");
@@ -376,15 +384,14 @@ export default function HomePageClient({ latestPosts }: { latestPosts: Post[] })
             {/* Left — headline */}
             <div className="space-y-6">
               <Badge variant="secondary" className="text-primary border-primary/20 bg-primary/10">
-                🇬🇧 UK&apos;s favourite baby registry
+                🇬🇧 {heroBadge}
               </Badge>
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-tight text-balance">
-                Every baby deserves the perfect{" "}
-                <span className="text-primary">welcome gift</span>
+                {heroHeadline.split(" ").slice(0, -2).join(" ")}{" "}
+                <span className="text-primary">{heroHeadline.split(" ").slice(-2).join(" ")}</span>
               </h1>
               <p className="text-lg text-muted-foreground leading-relaxed max-w-lg">
-                Create your dream baby registry in minutes. Compare prices across 50+ UK
-                retailers, share with loved ones, and get notified when prices drop.
+                {heroSubtext}
               </p>
               <div className="flex items-center gap-4 pt-2">
                 <div className="flex items-center gap-1.5">
@@ -392,7 +399,7 @@ export default function HomePageClient({ latestPosts }: { latestPosts: Post[] })
                     <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
                   ))}
                 </div>
-                <span className="text-sm text-muted-foreground">Loved by 12,000+ UK families</span>
+                <span className="text-sm text-muted-foreground">{socialProof}</span>
               </div>
             </div>
 
@@ -507,7 +514,7 @@ export default function HomePageClient({ latestPosts }: { latestPosts: Post[] })
         </div>
       </section>
 
-      <HowItWorks />
+      <HowItWorks subtitle={howItWorksSubtitle} />
 
       {/* Features */}
       <section className="py-20">
@@ -616,7 +623,7 @@ export default function HomePageClient({ latestPosts }: { latestPosts: Post[] })
             <p className="text-muted-foreground">Everything you need to know about Bump & Bundle</p>
           </div>
           <div className="space-y-3">
-            {FAQS.map((faq, i) => (
+            {faqs.map((faq, i) => (
               <div key={i} className="border border-border rounded-xl overflow-hidden">
                 <button
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}

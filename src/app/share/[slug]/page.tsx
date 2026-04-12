@@ -116,7 +116,7 @@ export default async function SharePage({ params }: Props) {
                       )}
                       {item.url && (
                         <a
-                          href={item.url}
+                          href={`/go?url=${encodeURIComponent(item.url)}&retailer=${encodeURIComponent(item.retailer ?? "")}&title=${encodeURIComponent(item.title)}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
