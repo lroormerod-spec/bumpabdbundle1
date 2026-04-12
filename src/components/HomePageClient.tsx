@@ -406,7 +406,10 @@ export default function HomePageClient({ latestPosts }: { latestPosts: Post[] })
                         {!loading && <ArrowRight className="w-4 h-4 ml-1" />}
                       </Button>
                       <p className="text-xs text-muted-foreground text-center">
-                        By continuing you agree to our Terms & Privacy Policy
+                        By continuing you agree to our{" "}
+                        <Link href="/terms" className="underline hover:text-foreground">Terms</Link>
+                        {" "}&amp;{" "}
+                        <Link href="/privacy" className="underline hover:text-foreground">Privacy Policy</Link>
                       </p>
                     </form>
                   )}
@@ -626,14 +629,16 @@ export default function HomePageClient({ latestPosts }: { latestPosts: Post[] })
               </div>
               <span className="font-bold text-foreground">Bump & Bundle</span>
             </div>
-            <div className="flex items-center gap-6 text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
               <Link href="/blog" className="hover:text-foreground transition-colors">Blog</Link>
               <Link href="/app" className="hover:text-foreground transition-colors">Dashboard</Link>
-              <span>Privacy</span>
-              <span>Terms</span>
+              <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
+              <Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link>
+              <Link href="/cookies" className="hover:text-foreground transition-colors">Cookies</Link>
+              <Link href="/affiliate-disclosure" className="hover:text-foreground transition-colors">Affiliate Disclosure</Link>
             </div>
             <p className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} Bump & Bundle. Made with ❤️ for UK families.
+              © {new Date().getFullYear()} Bump &amp; Bundle. Made with ❤️ for UK families.
             </p>
           </div>
         </div>
