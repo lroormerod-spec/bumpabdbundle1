@@ -352,7 +352,7 @@ export default function HomePageClient({ latestPosts }: { latestPosts: Post[] })
       <NavBar />
 
       {/* Hero */}
-      <section className="relative overflow-hidden">
+      <section id="sign-in" className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-secondary/60 via-background to-background" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
@@ -380,7 +380,7 @@ export default function HomePageClient({ latestPosts }: { latestPosts: Post[] })
             </div>
 
             {/* Right — sign-in card */}
-            <div id="sign-in">
+            <div>
               <Card className="shadow-xl border-border">
                 <CardContent className="p-8">
                   {otpStep === "email" && (
