@@ -8,11 +8,13 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const q = searchParams.get("q");
+    const page = parseInt(searchParams.get("page") || "1");
+    const start = (page - 1) * 40;
 
     if (!q) return NextResponse.json({ error: "Query required" }, { status: 400 });
 
     const serpApiKey = process.env.SERPAPI_KEY;
-    const url = `https://serpapi.com/search.json?engine=google_shopping&q=${encodeURIComponent(q)}&gl=uk&hl=en&api_key=${serpApiKey}`;
+    const url = `https://serpapi.com/search.json?engine=google_shopping&q=${encodeURIComponent(q)}&gl=uk&hl=en&api_key=${serpApiKey}&num=40&start=${start}`;
 
     const response = await fetch(url);
     if (!response.ok) {
@@ -20,7 +22,7 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json();
-    const results = (data.shopping_results || []).slice(0, 20).map((item: Record<string, unknown>) => ({
+    const results = (data.shopping_results || []).map((item: Record<string, unknown>) => ({
       title: item.title,
       price: parseFloat(String(item.price || "0").replace(/[^0-9.]/g, "")) || null,
       priceStr: item.price,
@@ -39,7 +41,12 @@ export async function GET(request: NextRequest) {
       isLowest: lowestPrice !== null && r.price === lowestPrice,
     }));
 
-    return NextResponse.json({ results: annotated });
+    return NextResponse.json({ 
+      results: annotated,
+      page,
+      hasMore: annotated.length === 40,
+      total: data.search_information?.total_results || null
+    });
   } catch (err) {
     console.error("search error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

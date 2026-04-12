@@ -85,6 +85,9 @@ export default function RegistryClient({ registry, initialItems }: Props) {
   const [committedQuery, setCommittedQuery] = useState(""); // what was last actually searched
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [searchPage, setSearchPage] = useState(1);
   const [hasSearched, setHasSearched] = useState(false);
   const [resultsVisible, setResultsVisible] = useState(false);
   const [myItems, setMyItems] = useState<RegistryItem[]>(initialItems);
@@ -108,14 +111,15 @@ export default function RegistryClient({ registry, initialItems }: Props) {
     setResultsVisible(false); // briefly hide for fade-in effect
 
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(q.trim())}`, {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(q.trim())}&page=1`, {
         signal: abortRef.current.signal,
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setSearchResults(data.results || []);
+      setHasMore(data.hasMore || false);
+      setSearchPage(1);
       setCommittedQuery(q.trim());
-      // Small delay so the DOM can mount before fading in
       requestAnimationFrame(() => setResultsVisible(true));
     } catch (err: unknown) {
       if (err instanceof Error && err.name === "AbortError") return; // silently ignore cancelled requests
@@ -413,6 +417,31 @@ export default function RegistryClient({ registry, initialItems }: Props) {
                   </CardContent>
                 </Card>
               ))}
+            </div>
+          )}
+
+          {/* Load more */}
+          {hasMore && !searching && searchResults.length > 0 && (
+            <div className="text-center pt-4">
+              <button
+                onClick={async () => {
+                  setLoadingMore(true);
+                  try {
+                    const nextPage = searchPage + 1;
+                    const res = await fetch(`/api/search?q=${encodeURIComponent(committedQuery)}&page=${nextPage}`);
+                    const data = await res.json();
+                    setSearchResults(prev => [...prev, ...(data.results || [])]);
+                    setHasMore(data.hasMore || false);
+                    setSearchPage(nextPage);
+                  } catch { /* ignore */ } finally {
+                    setLoadingMore(false);
+                  }
+                }}
+                disabled={loadingMore}
+                className="px-6 py-2.5 rounded-full text-sm font-semibold border border-border text-muted-foreground hover:text-foreground hover:border-primary transition-colors disabled:opacity-50"
+              >
+                {loadingMore ? "Loading…" : "Load more results"}
+              </button>
             </div>
           )}
 
