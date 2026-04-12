@@ -21,9 +21,22 @@ export async function middleware(request: NextRequest) {
     try {
       const { payload } = await jwtVerify(token, JWT_SECRET);
 
-      // Admin routes require isAdmin
-      if (pathname.startsWith("/admin") && !payload.isAdmin) {
-        return NextResponse.redirect(new URL("/app", request.url));
+      // Admin routes require isAdmin + HTTP Basic Auth
+      if (pathname.startsWith("/admin")) {
+        if (!payload.isAdmin) {
+          return NextResponse.redirect(new URL("/app", request.url));
+        }
+        // HTTP Basic Auth second factor
+        const basicAuth = request.headers.get("authorization");
+        const validCredentials = Buffer.from(
+          `admin:${process.env.ADMIN_PASSWORD || "Bmp&Bndl#2026!xK9"}`
+        ).toString("base64");
+        if (!basicAuth || basicAuth !== `Basic ${validCredentials}`) {
+          return new NextResponse("Admin authentication required", {
+            status: 401,
+            headers: { "WWW-Authenticate": 'Basic realm="Bump & Bundle Admin"' },
+          });
+        }
       }
 
       return NextResponse.next();
