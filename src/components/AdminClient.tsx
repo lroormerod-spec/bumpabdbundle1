@@ -138,6 +138,92 @@ const PAGE_FIELD_LABELS: Record<string, string> = {
 
 // ─── Main component ──────────────────────────────────────────────────────────
 
+function LinkHealthPanel() {
+  const [data, setData] = useState<{ failures: any[]; cached: number; total: number } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [prewarming, setPrewarming] = useState(false);
+
+  async function load() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/link-health");
+      setData(await res.json());
+    } finally { setLoading(false); }
+  }
+
+  async function prewarm() {
+    setPrewarming(true);
+    try {
+      const res = await fetch("/api/admin/prewarm", { method: "POST" });
+      const d = await res.json();
+      toast.success(`Pre-warmed ${d.warmed} searches (${d.skipped} already fresh)`);
+    } finally { setPrewarming(false); }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="font-semibold text-lg">Link Health</h2>
+          <p className="text-sm text-muted-foreground">Monitor affiliate link resolution and search cache</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={prewarm} disabled={prewarming}>
+            {prewarming && <Loader2 className="w-4 h-4 animate-spin mr-1.5" />}
+            Pre-warm searches
+          </Button>
+          <Button onClick={load} disabled={loading}>
+            {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : null}
+            Load stats
+          </Button>
+        </div>
+      </div>
+
+      {data && (
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div className="p-4 rounded-xl border border-border bg-card">
+              <p className="text-2xl font-bold text-primary">{data.cached}</p>
+              <p className="text-sm text-muted-foreground">Cached links</p>
+            </div>
+            <div className="p-4 rounded-xl border border-border bg-card">
+              <p className="text-2xl font-bold text-destructive">{data.total}</p>
+              <p className="text-sm text-muted-foreground">Failed resolutions</p>
+            </div>
+            <div className="p-4 rounded-xl border border-border bg-card">
+              <p className="text-2xl font-bold">
+                {data.total === 0 ? "100" : Math.round((1 - data.total / Math.max(data.cached + data.total, 1)) * 100)}%
+              </p>
+              <p className="text-sm text-muted-foreground">Resolution rate</p>
+            </div>
+          </div>
+
+          {data.failures.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Recent failures</h3>
+              {data.failures.map((f: any, i: number) => (
+                <div key={i} className="flex items-center gap-3 p-3 rounded-xl border border-destructive/20 bg-destructive/5">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{f.product_title || "Unknown product"}</p>
+                    <p className="text-xs text-muted-foreground">{f.retailer} · {new Date(f.created_at).toLocaleString("en-GB")}</p>
+                  </div>
+                  <span className="text-xs text-destructive font-medium flex-shrink-0">{f.reason}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {!data && !loading && (
+        <div className="text-center py-16 text-muted-foreground">
+          <p>Click "Load stats" to see link health data</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdminClient({ stats, users, posts: initialPosts, registries, affiliateClicks, pageContent: initialPageContent }: Props) {
   // Blog state
   const [posts, setPosts] = useState(initialPosts);
@@ -331,6 +417,7 @@ export default function AdminClient({ stats, users, posts: initialPosts, registr
           <TabsTrigger value="registries"><ShoppingBag className="w-4 h-4 mr-1.5" />Registries</TabsTrigger>
           <TabsTrigger value="users"><Users className="w-4 h-4 mr-1.5" />Users</TabsTrigger>
           <TabsTrigger value="affiliate"><MousePointerClick className="w-4 h-4 mr-1.5" />Affiliate Clicks</TabsTrigger>
+          <TabsTrigger value="link-health"><ChevronRight className="w-4 h-4 mr-1.5" />Link Health</TabsTrigger>
           <TabsTrigger value="pages"><FileEdit className="w-4 h-4 mr-1.5" />Pages</TabsTrigger>
         </TabsList>
 
@@ -721,6 +808,11 @@ export default function AdminClient({ stats, users, posts: initialPosts, registr
         </TabsContent>
 
         {/* ── Pages ────────────────────────────────────────────────────────── */}
+        {/* ── Link Health ───────────────────────────────────────────────── */}
+        <TabsContent value="link-health" className="mt-6 space-y-6">
+          <LinkHealthPanel />
+        </TabsContent>
+
         <TabsContent value="pages" className="mt-6 space-y-6">
           <div>
             <h2 className="font-semibold text-lg">Page Editor</h2>

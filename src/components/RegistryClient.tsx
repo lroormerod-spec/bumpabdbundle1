@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -72,15 +73,15 @@ const CATEGORIES = [
 
 function guessCategory(title: string, query: string): string {
   const text = (title + " " + query).toLowerCase();
-  if (/pram|stroller|pushchair|car seat|travel|buggy|carrier/.test(text)) return "Travel";
-  if (/sleep|crib|bassinet|moses|cot|monitor|white noise|swaddle/.test(text)) return "Sleep";
-  if (/bottle|breast|feeding|formula|bib|highchair|weaning|sippy/.test(text)) return "Feeding";
-  if (/gate|lock|monitor|safe|safety|thermometer|medicine/.test(text)) return "Safety";
-  if (/toy|play|bouncer|gym|rattle|teether|activity/.test(text)) return "Play";
-  if (/clothes|vest|babygrow|sleepsuit|outfit|clothing|hat|socks/.test(text)) return "Clothing";
-  if (/nursery|lamp|mobile|decor|storage|wardrobe|chest|drawer/.test(text)) return "Nursery";
-  if (/bath|towel|wash|shampoo|nappy|nappies|wipes|changing/.test(text)) return "Bathing";
-  if (/health|vitamin|cream|lotion|nappy cream|baby oil/.test(text)) return "Health";
+  if (/pram|stroller|pushchair|car seat|travel|buggy|carrier|isofix|booster seat/.test(text)) return "Travel";
+  if (/sleep|crib|bassinet|moses|cot|monitor|white noise|swaddle|sleeping bag|night light|lullaby/.test(text)) return "Sleep";
+  if (/bottle|breast pump|feeding|formula|bib|highchair|weaning|sippy|warmer|steriliser|sterilizer|soother|pacifier|dummy|nursing|lactation|milk|expressing/.test(text)) return "Feeding";
+  if (/gate|stairgate|socket|safe|safety|thermometer|medicine|first aid|baby proof/.test(text)) return "Safety";
+  if (/toy|play|bouncer|gym|rattle|teether|activity|sensory|mobile|musical|soft toy/.test(text)) return "Play";
+  if (/clothes|vest|babygrow|sleepsuit|outfit|clothing|hat|socks|mittens|romper|bodysuit/.test(text)) return "Clothing";
+  if (/nursery|lamp|mobile cot|decor|storage|wardrobe|chest|drawer|rug|curtain/.test(text)) return "Nursery";
+  if (/bath|towel|wash|shampoo|nappy|nappies|wipes|changing|mat|potty/.test(text)) return "Bathing";
+  if (/health|vitamin|cream|lotion|nappy rash|baby oil|nasal|gripe|colic/.test(text)) return "Health";
   return "Other";
 }
 
@@ -117,13 +118,13 @@ function ViewButton({ title, retailer }: { title: string; retailer: string }) {
       const data = await res.json();
       if (data.link) {
         // Route through /go for affiliate tracking
-        window.open(`/go?url=${encodeURIComponent(data.link)}&retailer=${encodeURIComponent(retailer)}&title=${encodeURIComponent(title)}`, "_blank");
+        window.open(`/go?url=${encodeURIComponent(data.link)}&retailer=${encodeURIComponent(data.retailer || retailer)}&title=${encodeURIComponent(title)}`, "_blank");
       } else {
-        // Fallback — open Google Shopping search
-        window.open(`https://www.google.co.uk/search?q=${encodeURIComponent(title)}&tbm=shop`, "_blank");
+        // Could not resolve — show toast instead of sending to Google
+        toast.error("Could not find product page. Try searching the retailer directly.");
       }
     } catch {
-      window.open(`https://www.google.co.uk/search?q=${encodeURIComponent(title)}&tbm=shop`, "_blank");
+      toast.error("Could not load product link. Please try again.");
     } finally {
       setResolving(false);
     }
@@ -256,6 +257,17 @@ export default function RegistryClient({ registry, initialItems }: Props) {
     } finally {
       setAdding(null);
     }
+  }
+
+  async function changeCategory(item: RegistryItem, category: string) {
+    try {
+      await fetch(`/api/items/${item.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category }),
+      });
+      setMyItems(prev => prev.map(i => i.id === item.id ? { ...i, category } : i));
+    } catch { /* ignore */ }
   }
 
   async function togglePurchased(item: RegistryItem) {
@@ -600,14 +612,27 @@ export default function RegistryClient({ registry, initialItems }: Props) {
                     <p className={`text-xs font-semibold line-clamp-2 leading-snug ${
                       item.isPurchased ? "line-through text-muted-foreground" : ""
                     }`}>{item.title}</p>
-                    {/* Price + retailer */}
-                    <div>
+                    {/* Price + retailer + category */}
+                    <div className="space-y-1">
                       {item.price && (
                         <p className="text-sm font-bold text-primary">{formatPrice(item.price)}</p>
                       )}
                       {item.retailer && (
                         <p className="text-[10px] text-muted-foreground truncate">{item.retailer}</p>
                       )}
+                      <Select value={item.category || "Other"} onValueChange={val => changeCategory(item, val)}>
+                        <SelectTrigger className="h-5 text-[10px] border-0 bg-muted/60 px-1.5 py-0 rounded w-auto min-w-0 focus:ring-0">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CATEGORIES.filter(c => c.label !== "All").map(c => (
+                            <SelectItem key={c.label} value={c.label} className="text-xs">
+                              {c.emoji} {c.label}
+                            </SelectItem>
+                          ))}
+                          <SelectItem value="Other" className="text-xs">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     {/* Actions */}
                     <div className="flex items-center justify-between pt-1 border-t border-border">

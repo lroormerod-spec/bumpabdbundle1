@@ -4,6 +4,11 @@ import { affiliateClicks, affiliateConfig } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 
+// Generic AWIN deep link wrapper — works for any AWIN retailer even without programme ID
+function buildGenericAwinUrl(originalUrl: string, publisherId: string): string {
+  return `https://www.awin1.com/cread.php?awinpublid=${publisherId}&ued=${encodeURIComponent(originalUrl)}`;
+}
+
 function buildAffiliateUrl(originalUrl: string, config: typeof affiliateConfig.$inferSelect): string {
   const { network, publisherId, programmeId, customUrlTemplate, trackingParam } = config;
 
@@ -62,14 +67,22 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Missing url param" }, { status: 400 });
   }
 
+  // Reject Google Shopping URLs — must be a real retailer endpoint
+  if (url.includes("google.com") || url.includes("google.co.uk")) {
+    console.error("Blocked Google URL in /go:", url);
+    // Log failure and return error
+    return NextResponse.json({ error: "Not a retailer URL" }, { status: 400 });
+  }
+
   let finalUrl = url;
   let configUsed: typeof affiliateConfig.$inferSelect | null = null;
 
   try {
     // Look up retailer config from DB
-    const configs = await db.select().from(affiliateConfig).where(eq(affiliateConfig.active, true));
+    const configs = await db.select().from(affiliateConfig);
+    const AWIN_PUBLISHER_ID = process.env.AWIN_PUBLISHER_ID || "";
 
-    // Find matching config by domain
+    // Find matching active config by domain
     const matched = configs.find(c => {
       const domain = c.retailerDomain.toLowerCase();
       const retailerLower = retailerParam.toLowerCase();
@@ -77,13 +90,17 @@ export async function GET(req: NextRequest) {
       return retailerLower.includes(domain) || domain.includes(retailerLower.split(".")[0]) || urlLower.includes(domain);
     });
 
-    if (matched) {
+    if (matched && matched.active) {
+      // Use specific configured tracking
       configUsed = matched;
       finalUrl = buildAffiliateUrl(url, matched);
+    } else if (AWIN_PUBLISHER_ID) {
+      // Fall back to generic AWIN deep link for any retailer
+      finalUrl = buildGenericAwinUrl(url, AWIN_PUBLISHER_ID);
     }
+    // If no publisher ID set yet, pass through direct URL (still goes to retailer)
   } catch (err) {
     console.error("Affiliate config lookup failed:", err);
-    // Fall through — redirect without tracking
   }
 
   // Log the click (non-blocking)
