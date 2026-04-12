@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Users, ShoppingBag, FileText, BarChart3, Plus, Trash2, Edit, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Users, ShoppingBag, FileText, BarChart3, Plus, Trash2, Edit, Eye, EyeOff, Loader2, X } from "lucide-react";
+import RichEditor from "@/components/RichEditor";
 import { toast } from "sonner";
 
 interface Stats {
@@ -34,6 +35,8 @@ interface Post {
   author: string;
   createdAt: Date | null;
   excerpt: string | null;
+  content: string | null;
+  coverImage: string | null;
 }
 
 interface Registry {
@@ -54,12 +57,29 @@ interface Props {
 
 export default function AdminClient({ stats, users, posts: initialPosts, registries }: Props) {
   const [posts, setPosts] = useState(initialPosts);
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [newPostTitle, setNewPostTitle] = useState("");
   const [newPostSlug, setNewPostSlug] = useState("");
   const [newPostContent, setNewPostContent] = useState("");
   const [newPostExcerpt, setNewPostExcerpt] = useState("");
   const [savingPost, setSavingPost] = useState(false);
   const [showNewPost, setShowNewPost] = useState(false);
+
+  async function saveEditedPost() {
+    if (!editingPost) return;
+    setSavingPost(true);
+    try {
+      const res = await fetch(`/api/admin/blog`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: editingPost.id, title: editingPost.title, slug: editingPost.slug, content: editingPost.content, excerpt: editingPost.excerpt }),
+      });
+      const updated = await res.json();
+      setPosts(posts.map(p => p.id === updated.id ? updated : p));
+      setEditingPost(null);
+      toast.success("Post saved");
+    } finally { setSavingPost(false); }
+  }
 
   async function createPost() {
     if (!newPostTitle || !newPostSlug) return;
@@ -210,14 +230,8 @@ export default function AdminClient({ stats, users, posts: initialPosts, registr
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Content (HTML)</Label>
-                  <Textarea
-                    value={newPostContent}
-                    onChange={e => setNewPostContent(e.target.value)}
-                    placeholder="<p>Post content...</p>"
-                    rows={8}
-                    className="font-mono text-xs"
-                  />
+                  <Label>Content</Label>
+                  <RichEditor content={newPostContent} onChange={setNewPostContent} placeholder="Start writing your post..." />
                 </div>
               </div>
               <div className="flex gap-3">
@@ -230,9 +244,44 @@ export default function AdminClient({ stats, users, posts: initialPosts, registr
             </div>
           )}
 
+          {/* Edit panel */}
+          {editingPost && (
+            <div className="border border-primary/30 rounded-xl p-6 bg-primary/5 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold">Editing: {editingPost.title}</h3>
+                <Button variant="ghost" size="icon" onClick={() => setEditingPost(null)}><X className="w-4 h-4" /></Button>
+              </div>
+              <div className="grid gap-4">
+                <div className="space-y-1.5">
+                  <Label>Title</Label>
+                  <Input value={editingPost.title} onChange={e => setEditingPost({ ...editingPost, title: e.target.value })} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Slug</Label>
+                  <Input value={editingPost.slug} onChange={e => setEditingPost({ ...editingPost, slug: e.target.value })} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Excerpt</Label>
+                  <Textarea value={editingPost.excerpt || ""} onChange={e => setEditingPost({ ...editingPost, excerpt: e.target.value })} rows={2} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Content</Label>
+                  <RichEditor content={editingPost.content || ""} onChange={html => setEditingPost({ ...editingPost, content: html })} />
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <Button onClick={saveEditedPost} disabled={savingPost}>
+                  {savingPost ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : null}
+                  Save changes
+                </Button>
+                <Button variant="outline" onClick={() => setEditingPost(null)}>Cancel</Button>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-3">
             {posts.map((post) => (
-              <div key={post.id} className="flex items-center gap-4 p-4 rounded-xl border border-border bg-card">
+              <div key={post.id} className={`flex items-center gap-4 p-4 rounded-xl border bg-card transition-colors ${editingPost?.id === post.id ? "border-primary/40 bg-primary/5" : "border-border"}`}>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="font-medium truncate">{post.title}</p>
@@ -243,6 +292,9 @@ export default function AdminClient({ stats, users, posts: initialPosts, registr
                   <p className="text-xs text-muted-foreground mt-0.5">/{post.slug}</p>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingPost(post)} title="Edit">
+                    <Edit className="w-3.5 h-3.5" />
+                  </Button>
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => togglePostStatus(post)} title={post.status === "published" ? "Unpublish" : "Publish"}>
                     {post.status === "published" ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                   </Button>
