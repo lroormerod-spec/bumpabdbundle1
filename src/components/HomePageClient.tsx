@@ -14,6 +14,7 @@ import {
   ChevronRight, Star, Loader2, Check, ShoppingBag,
   ArrowRight, Clock
 } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 
 interface Post {
@@ -56,6 +57,202 @@ const FAQS = [
     a: "Each registry gets a unique shareable link. Share via WhatsApp, email, or copy the link — no account needed for gift givers.",
   },
 ];
+
+// ── Phone mockup screens ────────────────────────────────────────────────────
+
+function PhoneSignIn() {
+  const [tick, setTick] = useState(0);
+  useEffect(() => { const t = setInterval(() => setTick(n => n + 1), 700); return () => clearInterval(t); }, []);
+  const emailTyped = "emma@gmail.com";
+  const typingDone = tick >= emailTyped.length;
+  const sendingDone = tick >= emailTyped.length + 5;
+  const phase = !typingDone ? "email" : !sendingDone ? "sending" : "code";
+  const shownEmail = emailTyped.slice(0, Math.min(emailTyped.length, tick));
+  const codeDigits = "482916";
+  const codeStart = emailTyped.length + 5;
+  const shownCode = phase === "code" ? codeDigits.slice(0, Math.min(codeDigits.length, tick - codeStart)) : "";
+  return (
+    <div style={{ padding: "10px 12px", fontFamily: "inherit", height: "100%", display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 0" }}>
+        <div style={{ width: 18, height: 18, borderRadius: "50%", background: "hsl(152,28%,38%)" }} />
+        <span style={{ fontSize: 11, fontWeight: 800, color: "#1a1a1a" }}>Bump &amp; Bundle</span>
+      </div>
+      {phase !== "code" ? (
+        <>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#1a1a1a", textAlign: "center", marginTop: 4 }}>Get started free</div>
+          <div style={{ fontSize: 9, color: "#6b7280", textAlign: "center", marginTop: -6 }}>Enter your email to sign in</div>
+          <div style={{ fontSize: 8.5, fontWeight: 600, color: "#374151" }}>Email address</div>
+          <div style={{ border: "1.5px solid hsl(152,28%,38%)", borderRadius: 8, padding: "6px 8px", fontSize: 9.5, color: "#1a1a1a", background: "white", minHeight: 26, display: "flex", alignItems: "center" }}>
+            {shownEmail}<span style={{ borderRight: "1px solid hsl(152,28%,38%)", marginLeft: 1, animation: "blink 1s infinite" }}>&nbsp;</span>
+          </div>
+          <div style={{ background: phase === "sending" ? "hsl(152,28%,32%)" : typingDone ? "hsl(152,28%,38%)" : "#d1d5db", color: "white", borderRadius: 8, padding: "7px", fontSize: 10, fontWeight: 700, textAlign: "center", transition: "background 0.4s" }}>
+            {phase === "sending" ? "Sending…" : "Send code →"}
+          </div>
+        </>
+      ) : (
+        <>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#1a1a1a", textAlign: "center", marginTop: 4 }}>Check your inbox</div>
+          <div style={{ fontSize: 8.5, color: "#6b7280", textAlign: "center", marginTop: -6, lineHeight: 1.4 }}>Code sent to <strong style={{ color: "#374151" }}>{emailTyped}</strong></div>
+          <div style={{ fontSize: 8.5, fontWeight: 600, color: "#374151" }}>Verification code</div>
+          <div style={{ border: "1.5px solid hsl(152,28%,38%)", borderRadius: 8, padding: "8px", fontSize: 15, fontWeight: 700, letterSpacing: "0.4em", color: "#1a1a1a", textAlign: "center", fontFamily: "monospace", background: "white" }}>
+            {shownCode || "······"}
+          </div>
+          <div style={{ background: shownCode.length >= 6 ? "hsl(152,28%,38%)" : "#d1d5db", color: "white", borderRadius: 8, padding: "7px", fontSize: 10, fontWeight: 700, textAlign: "center", transition: "background 0.4s" }}>
+            Verify &amp; sign in →
+          </div>
+        </>
+      )}
+      <style>{"@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }"}</style>
+    </div>
+  );
+}
+
+function PhoneRegistry() {
+  const [tick, setTick] = useState(0);
+  useEffect(() => { const t = setInterval(() => setTick(n => (n + 1) % 120), 300); return () => clearInterval(t); }, []);
+  const typed = "Graco pram";
+  const shown = tick < 30 ? typed.slice(0, Math.min(typed.length, tick)) : typed;
+  const showResults = tick >= 12;
+  return (
+    <div style={{ padding: "10px 12px", fontFamily: "inherit", height: "100%", display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: "#1a1a1a" }}>My Registry</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#f3f4f6", borderRadius: 8, padding: "5px 8px" }}>
+        <span style={{ fontSize: 9, color: "#9ca3af" }}>&#128269;</span>
+        <span style={{ fontSize: 9, color: tick < typed.length ? "#1a1a1a" : "#9ca3af" }}>{shown || "Search products..."}</span>
+      </div>
+      {showResults && [
+        { name: "Graco FastAction", price: "£129", badge: true, retailer: "Argos" },
+        { name: "Graco Modes Travel", price: "£189", badge: false, retailer: "Amazon" },
+      ].map((p, i) => (
+        <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, background: "white", borderRadius: 10, border: "1px solid #e5e7eb", padding: 8 }}>
+          <div style={{ width: 28, height: 28, borderRadius: 6, background: "#f3f4f6", flexShrink: 0 }} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 8.5, fontWeight: 600, color: "#1a1a1a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</div>
+            <div style={{ fontSize: 7.5, color: "#9ca3af" }}>{p.retailer}</div>
+          </div>
+          <div style={{ textAlign: "right", flexShrink: 0 }}>
+            <div style={{ fontSize: 10, fontWeight: 700 }}>{p.price}</div>
+            {p.badge && <div style={{ fontSize: 7, background: "#ecfdf5", color: "#065f46", borderRadius: 3, padding: "1px 4px", fontWeight: 600 }}>✓ Lowest</div>}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PhoneShare() {
+  return (
+    <div style={{ padding: "10px 12px", fontFamily: "inherit", height: "100%", display: "flex", flexDirection: "column", gap: 10, alignItems: "center" }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: "#1a1a1a", alignSelf: "flex-start" }}>Share Registry</div>
+      <div style={{ width: 44, height: 44, borderRadius: "50%", background: "hsl(152,28%,92%)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <span style={{ fontSize: 20 }}>&#128140;</span>
+      </div>
+      <div style={{ fontSize: 10, fontWeight: 700, color: "#1a1a1a" }}>Emma &amp; James's Registry</div>
+      <div style={{ fontSize: 8.5, color: "#6b7280", textAlign: "center" }}>Share with family &amp; friends</div>
+      <div style={{ display: "flex", gap: 6, width: "100%" }}>
+        {[{emoji:"&#128242;",label:"WhatsApp",color:"#25D366"},{emoji:"&#128140;",label:"Email",color:"hsl(152,28%,38%)"},{emoji:"&#128279;",label:"Copy",color:"#6366f1"}].map(ch => (
+          <div key={ch.label} style={{ flex: 1, background: ch.color, color: "white", borderRadius: 8, padding: "6px 4px", textAlign: "center", fontSize: 8, fontWeight: 700 }}>
+            <div style={{ fontSize: 12 }} dangerouslySetInnerHTML={{ __html: ch.emoji }} />
+            {ch.label}
+          </div>
+        ))}
+      </div>
+      <div style={{ background: "#f3f4f6", borderRadius: 8, padding: "6px 8px", width: "100%", display: "flex", alignItems: "center", gap: 4 }}>
+        <span style={{ fontSize: 7.5, color: "#6b7280", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>bumpandbundle.com/share/abc123</span>
+        <span style={{ fontSize: 7.5, fontWeight: 700, color: "hsl(152,28%,38%)", flexShrink: 0 }}>Copy</span>
+      </div>
+    </div>
+  );
+}
+
+const HOW_STEPS = [
+  { number: "01", color: "hsl(152,28%,38%)", colorLight: "hsl(152,28%,95%)", title: "Sign in instantly", subtitle: "No passwords. No fuss.", desc: "Enter your email and we'll send a 6-digit code straight to your inbox. Verified and in within seconds — no passwords, ever.", phone: <PhoneSignIn /> },
+  { number: "02", color: "hsl(217,71%,53%)", colorLight: "hsl(217,71%,96%)", title: "Search & add products", subtitle: "Live prices from 50+ UK retailers.", desc: "Search for anything — prams, monitors, feeding sets. We pull live prices from Argos, Amazon, John Lewis and more. Tap Add to list to save it.", phone: <PhoneRegistry /> },
+  { number: "03", color: "hsl(25,85%,55%)", colorLight: "hsl(25,85%,96%)", title: "Share with everyone", subtitle: "One link. Zero duplicates.", desc: "Share your registry via WhatsApp, email or anywhere else. Friends and family can see what's needed and mark gifts as bought — so nobody doubles up.", phone: <PhoneShare /> },
+];
+
+function HowItWorks() {
+  const [active, setActive] = useState(0);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const observer = new IntersectionObserver(([e]) => { if (e.isIntersecting) { const t = setInterval(() => setActive(s => (s + 1) % HOW_STEPS.length), 5500); return () => clearInterval(t); } }, { threshold: 0.3 });
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+  const step = HOW_STEPS[active];
+  return (
+    <section ref={ref} className="py-24 border-y border-border" style={{ background: "hsl(28,30%,97%)" }}>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-14">
+          <div className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold mb-4" style={{ background: "hsl(152,28%,92%)", color: "hsl(152,28%,32%)" }}>Up and running in minutes</div>
+          <h2 className="text-3xl font-bold mb-3">How Bump &amp; Bundle works</h2>
+          <p className="text-muted-foreground">From first search to first gift — the whole journey takes under 3 minutes.</p>
+        </div>
+        <div className="flex flex-col lg:flex-row items-center gap-16">
+          {/* Left — step content */}
+          <div className="flex-1 space-y-6">
+            {/* Step tabs */}
+            <div className="flex gap-2">
+              {HOW_STEPS.map((s, i) => (
+                <button key={i} onClick={() => setActive(i)}
+                  className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all duration-300"
+                  style={{ background: i === active ? step.color : "transparent", color: i === active ? "white" : "hsl(var(--muted-foreground))", border: `2px solid ${i === active ? step.color : "hsl(var(--border))"}` }}>
+                  <span className="text-xs opacity-70">{s.number}</span>
+                  {s.title}
+                </button>
+              ))}
+            </div>
+            {/* Progress bar */}
+            <div className="h-1 rounded-full bg-border overflow-hidden">
+              <div className="h-full rounded-full transition-all duration-300" style={{ width: `${((active + 1) / HOW_STEPS.length) * 100}%`, background: step.color }} />
+            </div>
+            {/* Content */}
+            <div key={active} style={{ animation: "fadeUp 0.4s ease" }}>
+              <div className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold mb-3" style={{ background: step.colorLight, color: step.color }}>
+                Step {active + 1} of {HOW_STEPS.length}
+              </div>
+              <h3 className="text-2xl font-bold mb-2">{step.title}</h3>
+              <p className="font-semibold mb-3" style={{ color: step.color }}>{step.subtitle}</p>
+              <p className="text-muted-foreground leading-relaxed">{step.desc}</p>
+            </div>
+            {/* Nav buttons */}
+            <div className="flex items-center gap-3 pt-2">
+              <button onClick={() => setActive(s => Math.max(0, s - 1))} disabled={active === 0}
+                className="px-4 py-2 rounded-full text-sm font-semibold border border-border text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30">
+                ← Back
+              </button>
+              <button onClick={() => setActive(s => Math.min(HOW_STEPS.length - 1, s + 1))} disabled={active === HOW_STEPS.length - 1}
+                className="px-4 py-2 rounded-full text-sm font-semibold text-white transition-colors disabled:opacity-30"
+                style={{ background: step.color }}>
+                Next step →
+              </button>
+            </div>
+          </div>
+          {/* Right — phone mockup */}
+          <div className="flex-shrink-0">
+            <div style={{ width: 240, height: 480, borderRadius: 36, background: "#1a1a2e", padding: "12px 8px", boxShadow: "0 30px 80px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.1)" }}>
+              {/* Notch */}
+              <div style={{ width: 60, height: 20, borderRadius: "0 0 12px 12px", background: "#1a1a2e", margin: "0 auto 8px", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#333" }} />
+                <div style={{ width: 40, height: 4, borderRadius: 2, background: "#333" }} />
+              </div>
+              {/* Screen */}
+              <div style={{ background: "#f9f5f0", borderRadius: 24, height: "calc(100% - 36px)", overflow: "hidden", transition: "all 0.4s ease" }}>
+                <div key={active} style={{ height: "100%", animation: "fadeIn 0.4s ease" }}>
+                  {step.phone}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <style>{`
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+      `}</style>
+    </section>
+  );
+}
 
 export default function HomePageClient({ latestPosts }: { latestPosts: Post[] }) {
   const router = useRouter();
@@ -288,50 +485,7 @@ export default function HomePageClient({ latestPosts }: { latestPosts: Post[] })
         </div>
       </section>
 
-      {/* How it works */}
-      <section className="py-20 bg-card border-y border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl font-bold mb-3">How it works</h2>
-            <p className="text-muted-foreground text-lg">Get your registry ready in 3 simple steps</p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                step: "01",
-                icon: <Search className="w-6 h-6" />,
-                title: "Search products",
-                desc: "Search across 14 UK retailers at once. We compare prices and show you the best deal with a clear lowest price badge.",
-              },
-              {
-                step: "02",
-                icon: <Share2 className="w-6 h-6" />,
-                title: "Share your list",
-                desc: "Get a beautiful shareable link. Send it via WhatsApp, email, or copy it for your baby shower invites.",
-              },
-              {
-                step: "03",
-                icon: <Bell className="w-6 h-6" />,
-                title: "Track & get alerts",
-                desc: "See what's been purchased, set price drop alerts, and keep your registry up to date with ease.",
-              },
-            ].map((item) => (
-              <div key={item.step} className="relative text-center p-8 rounded-2xl bg-background border border-border hover:shadow-md transition-shadow">
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center shadow-sm">
-                    {item.step}
-                  </div>
-                </div>
-                <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-5 mt-2 text-primary">
-                  {item.icon}
-                </div>
-                <h3 className="text-xl font-semibold mb-3">{item.title}</h3>
-                <p className="text-muted-foreground leading-relaxed">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <HowItWorks />
 
       {/* Features */}
       <section className="py-20">
