@@ -257,6 +257,7 @@ function HowItWorks() {
 export default function HomePageClient({ latestPosts }: { latestPosts: Post[] }) {
   const router = useRouter();
   const [otpStep, setOtpStep] = useState<"email" | "code" | "register">("email");
+  const [devCode, setDevCode] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
@@ -276,8 +277,9 @@ export default function HomePageClient({ latestPosts }: { latestPosts: Post[] })
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
+      if (data.devCode) setDevCode(data.devCode);
       setOtpStep("code");
-      toast.success(`Code sent to ${email}`);
+      toast.success(data.devCode ? `Code ready — see yellow box below` : `Code sent to ${email}`);
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Failed to send code");
     } finally {
@@ -417,6 +419,12 @@ export default function HomePageClient({ latestPosts }: { latestPosts: Post[] })
                           We sent a 6-digit code to <strong>{email}</strong>
                         </p>
                       </div>
+                      {devCode && (
+                        <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800 flex items-center gap-2">
+                          <span className="font-semibold">Your code:</span>
+                          <span className="font-mono font-bold tracking-widest text-base">{devCode}</span>
+                        </div>
+                      )}
                       <div className="space-y-2">
                         <Label htmlFor="code">Verification code</Label>
                         <Input
