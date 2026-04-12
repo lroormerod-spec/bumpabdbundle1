@@ -144,6 +144,7 @@ export default function RegistryClient({ registry, initialItems }: Props) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [searchPage, setSearchPage] = useState(1);
+  const [fromCache, setFromCache] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [resultsVisible, setResultsVisible] = useState(false);
   const [myItems, setMyItems] = useState<RegistryItem[]>(initialItems);
@@ -176,6 +177,7 @@ export default function RegistryClient({ registry, initialItems }: Props) {
       setSearchResults(data.results || []);
       setHasMore(data.hasMore || false);
       setSearchPage(1);
+      setFromCache(data.cached || false);
       setCommittedQuery(q.trim());
       requestAnimationFrame(() => setResultsVisible(true));
     } catch (err: unknown) {
@@ -201,7 +203,7 @@ export default function RegistryClient({ registry, initialItems }: Props) {
 
     debounceRef.current = setTimeout(() => {
       runSearch(searchQuery);
-    }, 400);
+    }, 300);
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);

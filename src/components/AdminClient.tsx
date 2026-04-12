@@ -613,9 +613,18 @@ export default function AdminClient({ stats, users, posts: initialPosts, registr
                     {registry.dueDate && ` · Due: ${new Date(registry.dueDate).toLocaleDateString("en-GB")}`}
                   </p>
                 </div>
-                <p className="text-xs text-muted-foreground flex-shrink-0">
+                <p className="text-xs text-muted-foreground flex-shrink-0 mr-2">
                   {registry.createdAt ? new Date(registry.createdAt).toLocaleDateString("en-GB") : ""}
                 </p>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive flex-shrink-0"
+                  onClick={async () => {
+                    if (!confirm("Delete this registry and all its items?")) return;
+                    await fetch(`/api/admin/registries?id=${registry.id}`, { method: "DELETE" });
+                    toast.success("Registry deleted");
+                    window.location.reload();
+                  }}>
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
               </div>
             ))}
             {registries.length === 0 && <p className="text-center text-muted-foreground py-10">No registries yet</p>}
