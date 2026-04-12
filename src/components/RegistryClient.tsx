@@ -80,6 +80,35 @@ function ResultSkeleton() {
   );
 }
 
+function ViewButton({ title, retailer }: { title: string; retailer: string }) {
+  const [resolving, setResolving] = useState(false);
+
+  async function handleClick() {
+    setResolving(true);
+    try {
+      const res = await fetch(`/api/item-link?title=${encodeURIComponent(title)}&retailer=${encodeURIComponent(retailer)}`);
+      const data = await res.json();
+      if (data.link) {
+        // Route through /go for affiliate tracking
+        window.open(`/go?url=${encodeURIComponent(data.link)}&retailer=${encodeURIComponent(retailer)}&title=${encodeURIComponent(title)}`, "_blank");
+      } else {
+        // Fallback — open Google Shopping search
+        window.open(`https://www.google.co.uk/search?q=${encodeURIComponent(title)}&tbm=shop`, "_blank");
+      }
+    } catch {
+      window.open(`https://www.google.co.uk/search?q=${encodeURIComponent(title)}&tbm=shop`, "_blank");
+    } finally {
+      setResolving(false);
+    }
+  }
+
+  return (
+    <Button size="sm" variant="outline" onClick={handleClick} disabled={resolving} title="View best price">
+      {resolving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ExternalLink className="w-3.5 h-3.5" />}
+    </Button>
+  );
+}
+
 export default function RegistryClient({ registry, initialItems }: Props) {
   const [searchQuery, setSearchQuery] = useState("");
   const [committedQuery, setCommittedQuery] = useState(""); // what was last actually searched
@@ -401,18 +430,7 @@ export default function RegistryClient({ registry, initialItems }: Props) {
                         )}
                         <span className="ml-1">{adding === result.title ? "Adding…" : "Add to list"}</span>
                       </Button>
-                      {result.link && (
-                        <Button size="sm" variant="outline" asChild>
-                          <a
-                            href={`/go?url=${encodeURIComponent(result.link)}&retailer=${encodeURIComponent(result.retailer ?? "")}&title=${encodeURIComponent(result.title)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title="View on retailer site"
-                          >
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          </a>
-                        </Button>
-                      )}
+                      <ViewButton title={result.title} retailer={result.retailer ?? ""} />
                     </div>
                   </CardContent>
                 </Card>
@@ -539,18 +557,7 @@ export default function RegistryClient({ registry, initialItems }: Props) {
                     </div>
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">
-                    {item.url && (
-                      <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                        <a
-                          href={`/go?url=${encodeURIComponent(item.url)}&retailer=${encodeURIComponent(item.retailer ?? "")}&title=${encodeURIComponent(item.title)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          title="View on retailer site"
-                        >
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
-                      </Button>
-                    )}
+                    <ViewButton title={item.title} retailer={item.retailer ?? ""} />
                     <Button
                       variant="ghost"
                       size="icon"
