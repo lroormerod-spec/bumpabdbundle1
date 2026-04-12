@@ -518,80 +518,67 @@ export default function RegistryClient({ registry, initialItems }: Props) {
               </Button>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
               {myItems.map((item) => (
-                <div
-                  key={item.id}
-                  className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${
-                    item.isPurchased ? "opacity-60 bg-muted/40" : "bg-card hover:shadow-sm"
-                  }`}
-                >
-                  {item.image ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={item.image}
-                      alt={item.title}
-                      className="w-16 h-16 object-contain rounded-lg bg-muted flex-shrink-0 p-1"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
-                      <ShoppingBag className="w-6 h-6 text-muted-foreground" />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className={`font-medium text-sm line-clamp-1 ${item.isPurchased ? "line-through" : ""}`}>
-                      {item.title}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1">
+                <Card key={item.id} className={`overflow-hidden transition-all ${
+                  item.isPurchased ? "opacity-60" : "hover:shadow-md"
+                }`}>
+                  {/* Image */}
+                  <div className="relative bg-muted">
+                    {item.image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={item.image} alt={item.title} className="w-full h-36 object-contain p-2" />
+                    ) : (
+                      <div className="w-full h-36 flex items-center justify-center">
+                        <ShoppingBag className="w-8 h-8 text-muted-foreground/40" />
+                      </div>
+                    )}
+                    {item.isPurchased && (
+                      <div className="absolute top-2 right-2">
+                        <Badge className="text-[10px] bg-green-500 text-white px-1.5 py-0.5">Bought</Badge>
+                      </div>
+                    )}
+                  </div>
+                  <CardContent className="p-3 space-y-2">
+                    {/* Title */}
+                    <p className={`text-xs font-semibold line-clamp-2 leading-snug ${
+                      item.isPurchased ? "line-through text-muted-foreground" : ""
+                    }`}>{item.title}</p>
+                    {/* Price + retailer */}
+                    <div>
                       {item.price && (
-                        <span className="text-sm font-bold text-primary">{formatPrice(item.price)}</span>
+                        <p className="text-sm font-bold text-primary">{formatPrice(item.price)}</p>
                       )}
                       {item.retailer && (
-                        <span className="text-xs text-muted-foreground">{item.retailer}</span>
-                      )}
-                      {item.isPurchased && (
-                        <Badge variant="secondary" className="text-xs text-green-700 bg-green-50">
-                          Purchased
-                        </Badge>
+                        <p className="text-[10px] text-muted-foreground truncate">{item.retailer}</p>
                       )}
                     </div>
-                  </div>
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    <ViewButton title={item.title} retailer={item.retailer ?? ""} />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => toggleAlert(item)}
-                      title={item.priceAlert ? "Disable price alert" : "Enable price alert"}
-                    >
-                      {item.priceAlert ? (
-                        <Bell className="w-3.5 h-3.5 text-primary" />
-                      ) : (
-                        <BellOff className="w-3.5 h-3.5 text-muted-foreground" />
-                      )}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => togglePurchased(item)}
-                      title={item.isPurchased ? "Mark as not purchased" : "Mark as purchased"}
-                    >
-                      <CheckCircle
-                        className={`w-3.5 h-3.5 ${item.isPurchased ? "text-green-600" : "text-muted-foreground"}`}
-                      />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive hover:text-destructive"
-                      onClick={() => removeItem(item.id)}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                </div>
+                    {/* Actions */}
+                    <div className="flex items-center justify-between pt-1 border-t border-border">
+                      <div className="flex items-center gap-0.5">
+                        <Button variant="ghost" size="icon" className="h-7 w-7"
+                          onClick={() => toggleAlert(item)}
+                          title={item.priceAlert ? "Disable alert" : "Enable price alert"}>
+                          {item.priceAlert
+                            ? <Bell className="w-3.5 h-3.5 text-primary" />
+                            : <BellOff className="w-3.5 h-3.5 text-muted-foreground" />}
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7"
+                          onClick={() => togglePurchased(item)}
+                          title={item.isPurchased ? "Mark as not purchased" : "Mark as purchased"}>
+                          <CheckCircle className={`w-3.5 h-3.5 ${
+                            item.isPurchased ? "text-green-600" : "text-muted-foreground"
+                          }`} />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive"
+                          onClick={() => removeItem(item.id)}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                      <ViewButton title={item.title} retailer={item.retailer ?? ""} />
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           )}
