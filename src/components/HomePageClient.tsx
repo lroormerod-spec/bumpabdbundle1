@@ -29,10 +29,12 @@ interface Post {
 }
 
 const UK_RETAILERS = [
-  "amazon.co.uk", "johnlewis.com", "mothercare.com", "mamas-papas.com",
-  "smyths.com", "argos.co.uk", "boots.com", "dunelm.com",
-  "littlebird.com", "next.co.uk", "jojo.co.uk", "nuby.co.uk",
-  "tesco.com", "asda.com",
+  "amazon.co.uk", "johnlewis.com", "argos.co.uk", "boots.com",
+  "mamas-papas.com", "smyths.com", "next.co.uk", "very.co.uk",
+  "tesco.com", "asda.com", "littlewoods.com", "george.com",
+  "dunelm.com", "mothercare.com", "kiddicare.com", "jojo.co.uk",
+  "tkmaxx.com", "littlebird.com", "ebay.co.uk", "wayfair.co.uk",
+  "costco.co.uk", "nuby.co.uk", "bebebebe.co.uk", "babydan.co.uk",
 ];
 
 const FAQS = [
@@ -42,7 +44,7 @@ const FAQS = [
   },
   {
     q: "Which UK retailers do you cover?",
-    a: "We cover 14+ major UK retailers including Amazon, John Lewis, Mamas & Papas, Smyths, Argos, Boots, Next, and more.",
+    a: "We search 50+ UK retailers including Amazon, John Lewis, Mamas & Papas, Smyths, Argos, Boots, Next, Very, Tesco, ASDA and many more — any retailer listed on Google Shopping.",
   },
   {
     q: "How do price drop alerts work?",
@@ -366,7 +368,7 @@ export default function HomePageClient({ latestPosts }: { latestPosts: Post[] })
                 <span className="text-primary">welcome gift</span>
               </h1>
               <p className="text-lg text-muted-foreground leading-relaxed max-w-lg">
-                Create your dream baby registry in minutes. Compare prices across 14 UK
+                Create your dream baby registry in minutes. Compare prices across 50+ UK
                 retailers, share with loved ones, and get notified when prices drop.
               </p>
               <div className="flex items-center gap-4 pt-2">
@@ -527,7 +529,7 @@ export default function HomePageClient({ latestPosts }: { latestPosts: Post[] })
       <section className="py-16 bg-card border-y border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <p className="text-center text-sm font-medium text-muted-foreground mb-10 uppercase tracking-wider">
-            Compare prices across 14 UK retailers
+            Compare prices across 50+ UK retailers
           </p>
           <div className="flex flex-wrap justify-center gap-3">
             {UK_RETAILERS.map((retailer) => (
