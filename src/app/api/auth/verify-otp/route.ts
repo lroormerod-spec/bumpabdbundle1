@@ -12,8 +12,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Email and code required" }, { status: 400 });
     }
 
-    // Normalise googlemail.com → gmail.com
-    const normalizedEmail = email.toLowerCase().trim().replace(/@googlemail\.com$/i, "@gmail.com");
+    // Normalise googlemail.com ↔ gmail.com (same inbox)
+    const normalizedEmail = email.toLowerCase().trim()
+      .replace(/@googlemail\.com$/i, "@gmail.com")
+      .replace(/@gmail\.com$/i, "@gmail.com");
 
     // Validate OTP
     const [otp] = await db
