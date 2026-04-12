@@ -176,11 +176,27 @@ const HOW_STEPS = [
 function HowItWorks() {
   const [active, setActive] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startInterval = () => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(() => setActive(s => (s + 1) % HOW_STEPS.length), 10000);
+  };
+
   useEffect(() => {
-    const observer = new IntersectionObserver(([e]) => { if (e.isIntersecting) { const t = setInterval(() => setActive(s => (s + 1) % HOW_STEPS.length), 10000); return () => clearInterval(t); } }, { threshold: 0.3 });
+    const observer = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { startInterval(); }
+      else { if (intervalRef.current) clearInterval(intervalRef.current); }
+    }, { threshold: 0.2 });
     if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
+    return () => { observer.disconnect(); if (intervalRef.current) clearInterval(intervalRef.current); };
   }, []);
+
+  const handleTabClick = (i: number) => {
+    setActive(i);
+    startInterval(); // reset timer on manual click
+  };
+
   const step = HOW_STEPS[active];
   return (
     <section ref={ref} className="py-24 border-y border-border" style={{ background: "hsl(28,30%,97%)" }}>
@@ -190,17 +206,18 @@ function HowItWorks() {
           <h2 className="text-3xl font-bold mb-3">How Bump &amp; Bundle works</h2>
           <p className="text-muted-foreground">From first search to first gift — the whole journey takes under 3 minutes.</p>
         </div>
-        <div className="flex flex-col lg:flex-row items-center gap-16">
+        <div className="flex flex-col-reverse lg:flex-row items-center gap-12 lg:gap-16">
           {/* Left — step content */}
-          <div className="flex-1 space-y-6">
-            {/* Step tabs */}
-            <div className="flex gap-2">
+          <div className="flex-1 space-y-6 w-full">
+            {/* Step tabs — compact on mobile */}
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
               {HOW_STEPS.map((s, i) => (
-                <button key={i} onClick={() => setActive(i)}
-                  className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all duration-300"
+                <button key={i} onClick={() => handleTabClick(i)}
+                  className="flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold transition-all duration-300 flex-shrink-0"
                   style={{ background: i === active ? step.color : "transparent", color: i === active ? "white" : "hsl(var(--muted-foreground))", border: `2px solid ${i === active ? step.color : "hsl(var(--border))"}` }}>
-                  <span className="text-xs opacity-70">{s.number}</span>
-                  {s.title}
+                  <span className="opacity-70">{s.number}</span>
+                  <span className="hidden sm:inline">{s.title}</span>
+                  <span className="sm:hidden">{s.title.split(" ")[0]}</span>
                 </button>
               ))}
             </div>
@@ -219,11 +236,11 @@ function HowItWorks() {
             </div>
             {/* Nav buttons */}
             <div className="flex items-center gap-3 pt-2">
-              <button onClick={() => setActive(s => Math.max(0, s - 1))} disabled={active === 0}
+              <button onClick={() => handleTabClick(Math.max(0, active - 1))} disabled={active === 0}
                 className="px-4 py-2 rounded-full text-sm font-semibold border border-border text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30">
                 ← Back
               </button>
-              <button onClick={() => setActive(s => Math.min(HOW_STEPS.length - 1, s + 1))} disabled={active === HOW_STEPS.length - 1}
+              <button onClick={() => handleTabClick(Math.min(HOW_STEPS.length - 1, active + 1))} disabled={active === HOW_STEPS.length - 1}
                 className="px-4 py-2 rounded-full text-sm font-semibold text-white transition-colors disabled:opacity-30"
                 style={{ background: step.color }}>
                 Next step →
@@ -231,8 +248,8 @@ function HowItWorks() {
             </div>
           </div>
           {/* Right — phone mockup */}
-          <div className="flex-shrink-0">
-            <div style={{ width: 240, height: 480, borderRadius: 36, background: "#1a1a2e", padding: "12px 8px", boxShadow: "0 30px 80px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.1)" }}>
+          <div className="flex-shrink-0 flex justify-center w-full lg:w-auto">
+            <div style={{ width: 220, height: 440, borderRadius: 36, background: "#1a1a2e", padding: "12px 8px", boxShadow: "0 30px 80px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.1)" }}>
               {/* Notch */}
               <div style={{ width: 60, height: 20, borderRadius: "0 0 12px 12px", background: "#1a1a2e", margin: "0 auto 8px", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
                 <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#333" }} />
