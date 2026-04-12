@@ -11,15 +11,14 @@ function generateCode(): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const { email } = await request.json();
+    const { email: rawEmail } = await request.json();
 
-    if (!email || !email.includes("@")) {
+    if (!rawEmail || !rawEmail.includes("@")) {
       return NextResponse.json({ error: "Invalid email" }, { status: 400 });
     }
 
     // Normalise googlemail.com → gmail.com (same inbox, prevents duplicate accounts)
-    const normalizedEmail = email.toLowerCase().trim().replace(/@googlemail\.com$/i, "@gmail.com");
-    email = normalizedEmail;
+    const email = rawEmail.toLowerCase().trim().replace(/@googlemail\.com$/i, "@gmail.com");
 
     const code = generateCode();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
