@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { users, registries, items } from "@/lib/schema";
-import { eq, and } from "drizzle-orm";
+import { users, registries, items, blogPosts } from "@/lib/schema";
+import { eq, desc } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import DashboardClient from "@/components/DashboardClient";
 
@@ -37,11 +37,27 @@ export default async function DashboardPage() {
     registryItems = await db.select().from(items).where(eq(items.registryId, firstRegistry.id));
   }
 
+  const latestPosts = await db
+    .select({
+      id: blogPosts.id,
+      title: blogPosts.title,
+      slug: blogPosts.slug,
+      excerpt: blogPosts.excerpt,
+      coverImage: blogPosts.coverImage,
+      author: blogPosts.author,
+      createdAt: blogPosts.createdAt,
+    })
+    .from(blogPosts)
+    .where(eq(blogPosts.status, "published"))
+    .orderBy(desc(blogPosts.createdAt))
+    .limit(3);
+
   return (
     <DashboardClient
       user={{ id: user.id, name: user.name, email: user.email, onboarded: user.onboarded }}
       registry={firstRegistry}
       items={registryItems}
+      latestPosts={latestPosts}
     />
   );
 }

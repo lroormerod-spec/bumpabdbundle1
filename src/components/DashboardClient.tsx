@@ -14,6 +14,16 @@ import {
 import { daysUntil, weeksPregnant } from "@/lib/utils";
 import WelcomeWizard from "@/components/WelcomeWizard";
 
+interface BlogPost {
+  id: number;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  coverImage: string | null;
+  author: string;
+  createdAt: Date | null;
+}
+
 interface Props {
   user: { id: number; name: string; email: string; onboarded: boolean };
   registry: {
@@ -30,6 +40,7 @@ interface Props {
     price: number | null;
     lastKnownPrice: number | null;
   }[];
+  latestPosts?: BlogPost[];
 }
 
 const WEEKLY_TIPS = [
@@ -52,7 +63,12 @@ const QUICK_LINKS = [
   { href: "/blog", icon: <BookOpen className="w-5 h-5" />, label: "Blog", color: "bg-amber-50 text-amber-600" },
 ];
 
-export default function DashboardClient({ user, registry, items }: Props) {
+function formatDate(date: Date | null): string {
+  if (!date) return "";
+  return new Date(date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
+
+export default function DashboardClient({ user, registry, items, latestPosts = [] }: Props) {
   const [showWizard, setShowWizard] = useState(false);
 
   useEffect(() => {
@@ -236,6 +252,58 @@ export default function DashboardClient({ user, registry, items }: Props) {
             ))}
           </div>
         </div>
+
+        {/* Latest blog posts */}
+        {latestPosts.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold">Latest from the blog</h2>
+              <Link
+                href="/blog"
+                className="text-sm text-primary hover:underline flex items-center gap-1"
+              >
+                View all <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {latestPosts.map((post) => (
+                <Link
+                  key={post.id}
+                  href={`/blog/${post.slug}`}
+                  className="group flex flex-col rounded-xl border border-border bg-card overflow-hidden hover:shadow-md transition-all hover:border-primary/40"
+                >
+                  {post.coverImage ? (
+                    <div className="relative h-40 overflow-hidden bg-secondary/30">
+                      <img
+                        src={post.coverImage}
+                        alt={post.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                  ) : (
+                    <div className="h-40 bg-gradient-to-br from-primary/10 to-secondary/40 flex items-center justify-center">
+                      <BookOpen className="w-8 h-8 text-primary/40" />
+                    </div>
+                  )}
+                  <div className="p-4 flex flex-col flex-1 gap-2">
+                    <p className="text-xs text-muted-foreground">{formatDate(post.createdAt)}</p>
+                    <h3 className="font-semibold text-sm leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+                      {post.title}
+                    </h3>
+                    {post.excerpt && (
+                      <p className="text-xs text-muted-foreground line-clamp-2 flex-1">
+                        {post.excerpt}
+                      </p>
+                    )}
+                    <span className="text-xs font-medium text-primary mt-1 flex items-center gap-1">
+                      Read more <ArrowRight className="w-3 h-3" />
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
