@@ -382,7 +382,7 @@ export default function AdminClient({ stats, users, posts: initialPosts, registr
                 {Object.entries(SEGMENT_CONFIG).map(([key, cfg]) => (
                   <button
                     key={key}
-                    onClick={() => setCrmSegment(crmSegment === key ? "all" : key)}
+                    onClick={() => { setCrmSegment(crmSegment === key ? "all" : key); setSelectedUser(null); }}
                     className={`p-3 rounded-xl border text-left transition-all ${crmSegment === key ? "border-primary/50 bg-primary/5 shadow-sm" : "border-border bg-card hover:border-primary/30"}`}
                   >
                     <div className="flex items-center gap-2 mb-1">
@@ -401,7 +401,7 @@ export default function AdminClient({ stats, users, posts: initialPosts, registr
                   <Input
                     placeholder="Search by name or email…"
                     value={crmSearch}
-                    onChange={e => setCrmSearch(e.target.value)}
+                    onChange={e => { setCrmSearch(e.target.value); setSelectedUser(null); }}
                     className="pl-9"
                   />
                 </div>
