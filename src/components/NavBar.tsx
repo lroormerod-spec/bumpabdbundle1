@@ -66,9 +66,7 @@ export default function NavBar({ user }: NavBarProps) {
 
           {/* Nav links */}
           <div className="hidden md:flex items-center gap-6">
-            <Link href="/blog" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Blog
-            </Link>
+
             {user && (
               <>
                 <Link href="/app" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
