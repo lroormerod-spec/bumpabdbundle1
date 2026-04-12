@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Green circle background -->
+  <circle cx="16" cy="16" r="16" fill="hsl(152,28%,38%)"/>
+  <!-- Baby bundle / swaddle shape -->
+  <ellipse cx="16" cy="20" rx="9" ry="8" fill="white" opacity="0.95"/>
+  <!-- Baby head -->
+  <circle cx="16" cy="11" r="5.5" fill="white" opacity="0.95"/>
+  <!-- Sleepy eyes -->
+  <path d="M13.5 10.5 Q14 9.5 14.5 10.5" stroke="hsl(152,28%,38%)" stroke-width="0.9" stroke-linecap="round" fill="none"/>
+  <path d="M17.5 10.5 Q18 9.5 18.5 10.5" stroke="hsl(152,28%,38%)" stroke-width="0.9" stroke-linecap="round" fill="none"/>
+  <!-- Smile -->
+  <path d="M14.5 12.5 Q16 14 17.5 12.5" stroke="hsl(152,28%,38%)" stroke-width="0.9" stroke-linecap="round" fill="none"/>
+  <!-- Swaddle wrap line -->
+  <path d="M8 20 Q16 17 24 20" stroke="hsl(152,28%,55%)" stroke-width="1" stroke-linecap="round" fill="none" opacity="0.4"/>
+  <!-- Little heart -->
+  <path d="M15 22 C15 21.2 14 20.5 14 21.5 C14 22.5 15 23.2 16 24 C17 23.2 18 22.5 18 21.5 C18 20.5 17 21.2 17 22 C17 21.2 16.5 21 16 21.5 C15.5 21 15 21.2 15 22Z" fill="hsl(352,60%,72%)" opacity="0.9"/>
+</svg>

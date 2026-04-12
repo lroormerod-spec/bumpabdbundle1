@@ -42,11 +42,21 @@ export default function NavBar({ user }: NavBarProps) {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href={user ? "/app" : "/"} className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center">
-              <svg viewBox="0 0 36 36" fill="none" className="w-5 h-5" aria-label="Bump & Bundle logo">
-                <ellipse cx="18" cy="20" rx="10" ry="12" fill="white" opacity="0.9"/>
-                <ellipse cx="18" cy="10" rx="6" ry="7" fill="white" opacity="0.9"/>
-                <circle cx="11" cy="14" r="1.5" fill="white" opacity="0.6"/>
+            <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+              <svg viewBox="0 0 32 32" fill="none" className="w-6 h-6" aria-label="Bump & Bundle logo">
+                {/* Baby head */}
+                <circle cx="16" cy="11" r="5.5" fill="white" opacity="0.95"/>
+                {/* Sleepy eyes */}
+                <path d="M13.5 10.5 Q14 9.5 14.5 10.5" stroke="hsl(152,28%,38%)" strokeWidth="0.9" strokeLinecap="round"/>
+                <path d="M17.5 10.5 Q18 9.5 18.5 10.5" stroke="hsl(152,28%,38%)" strokeWidth="0.9" strokeLinecap="round"/>
+                {/* Smile */}
+                <path d="M14.5 12.5 Q16 14 17.5 12.5" stroke="hsl(152,28%,38%)" strokeWidth="0.9" strokeLinecap="round"/>
+                {/* Swaddle body */}
+                <ellipse cx="16" cy="21" rx="9" ry="7.5" fill="white" opacity="0.95"/>
+                {/* Swaddle wrap */}
+                <path d="M8 20 Q16 17.5 24 20" stroke="hsl(152,28%,55%)" strokeWidth="1" strokeLinecap="round" opacity="0.5"/>
+                {/* Little heart */}
+                <path d="M14.8 22.5 C14.8 21.7 13.8 21 13.8 22 C13.8 23 14.8 23.7 16 24.5 C17.2 23.7 18.2 23 18.2 22 C18.2 21 17.2 21.7 17.2 22.5 C17.2 21.7 16.6 21.5 16 22 C15.4 21.5 14.8 21.7 14.8 22.5Z" fill="hsl(352,60%,72%)"/>
               </svg>
             </div>
             <span className="font-bold text-lg text-foreground tracking-tight">
