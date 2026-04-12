@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       expiresAt,
     });
 
-    const magicUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://bumpandbundle.com"}/auth/magic?token=${token}`;
+    const magicUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://bumpandbundle.com"}/api/auth/magic?token=${token}`;
 
     return NextResponse.json({ ok: true, magicUrl, expiresAt, user });
   } catch (err) {
