@@ -17,6 +17,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid email" }, { status: 400 });
     }
 
+    // Normalise googlemail.com → gmail.com (same inbox, prevents duplicate accounts)
+    const normalizedEmail = email.toLowerCase().trim().replace(/@googlemail\.com$/i, "@gmail.com");
+    email = normalizedEmail;
+
     const code = generateCode();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
