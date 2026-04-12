@@ -28,7 +28,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL("/?error=invalid_link", request.url));
     }
 
-    await db.update(magicLinks).set({ used: true }).where(eq(magicLinks.id, link.id));
+    // Only mark as used in production — keep reusable during testing
+    if (process.env.MAGIC_LINK_SINGLE_USE === "true") {
+      await db.update(magicLinks).set({ used: true }).where(eq(magicLinks.id, link.id));
+    }
 
     const [user] = await db.select().from(users).where(eq(users.id, link.userId!));
     if (!user) {
