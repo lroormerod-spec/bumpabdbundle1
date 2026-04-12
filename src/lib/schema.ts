@@ -184,3 +184,17 @@ export const bumpPhotos = pgTable("bump_photos", {
 });
 
 export type BumpPhoto = typeof bumpPhotos.$inferSelect;
+
+// Gift Claims — reservations made by friends/family on the share page
+export const giftClaims = pgTable("gift_claims", {
+  id: serial("id").primaryKey(),
+  itemId: integer("item_id").notNull(),
+  registryId: integer("registry_id").notNull(),
+  gifterName: text("gifter_name").notNull(),
+  token: text("token").notNull().unique(), // secret link token for the gifter
+  status: text("status").notNull().default("reserved"), // reserved | purchased | cancelled
+  reservedAt: timestamp("reserved_at").defaultNow(),
+  purchasedAt: timestamp("purchased_at"),
+});
+
+export type GiftClaim = typeof giftClaims.$inferSelect;
