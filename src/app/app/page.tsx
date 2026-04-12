@@ -19,7 +19,18 @@ export default async function DashboardPage() {
   if (!user) redirect("/");
 
   const userRegistries = await db.select().from(registries).where(eq(registries.userId, user.id));
-  const firstRegistry = userRegistries[0] || null;
+  let firstRegistry = userRegistries[0] || null;
+
+  // Auto-create registry for invited users who don't have one
+  if (!firstRegistry) {
+    const [created] = await db.insert(registries).values({
+      userId: user.id,
+      title: `${user.name || "My"} Registry`,
+      parentNames: user.name || "",
+      shareSlug: Math.random().toString(36).slice(2, 10),
+    }).returning();
+    firstRegistry = created;
+  }
 
   let registryItems: typeof items.$inferSelect[] = [];
   if (firstRegistry) {
