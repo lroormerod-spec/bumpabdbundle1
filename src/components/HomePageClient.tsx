@@ -177,7 +177,7 @@ function HowItWorks() {
   const [active, setActive] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const observer = new IntersectionObserver(([e]) => { if (e.isIntersecting) { const t = setInterval(() => setActive(s => (s + 1) % HOW_STEPS.length), 5500); return () => clearInterval(t); } }, { threshold: 0.3 });
+    const observer = new IntersectionObserver(([e]) => { if (e.isIntersecting) { const t = setInterval(() => setActive(s => (s + 1) % HOW_STEPS.length), 10000); return () => clearInterval(t); } }, { threshold: 0.3 });
     if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
   }, []);
