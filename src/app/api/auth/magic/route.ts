@@ -45,15 +45,9 @@ export async function GET(request: NextRequest) {
       .setExpirationTime("30d")
       .sign(JWT_SECRET);
 
-    const response = NextResponse.redirect(new URL("/app", request.url));
-    response.cookies.set("bb_session", sessionToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 30,
-      path: "/",
-    });
-
+    // Redirect to welcome page which will handle the session client-side
+    // Use a short-lived token in the URL to avoid cookie-in-redirect issues
+    const response = NextResponse.redirect(new URL(`/welcome?t=${sessionToken}`, request.url));
     return response;
   } catch (err) {
     console.error("Magic link error:", err);
