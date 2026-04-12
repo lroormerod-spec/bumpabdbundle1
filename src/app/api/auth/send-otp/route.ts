@@ -89,18 +89,17 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      console.error("Resend error:", error);
-      // Domain not yet verified — fall back to onboarding@resend.dev
-      const fallback = await resend.emails.send({
+      console.error("Resend error:", JSON.stringify(error));
+      // Domain not yet fully verified — fall back to onboarding@resend.dev
+      const { error: fallbackError } = await resend.emails.send({
         from: "Bump & Bundle <onboarding@resend.dev>",
         to: email,
         subject: `${code} is your Bump & Bundle sign-in code`,
         html,
       });
-      if (fallback.error) {
-        console.error("Fallback Resend error:", fallback.error);
-        // Last resort — return code in response so user can still sign in
-        return NextResponse.json({ success: true, devCode: code });
+      if (fallbackError) {
+        console.error("Fallback Resend error:", JSON.stringify(fallbackError));
+        return NextResponse.json({ error: "Failed to send email. Please try again." }, { status: 500 });
       }
     }
 
