@@ -126,9 +126,14 @@ export default function NavBar({ user }: NavBarProps) {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button size="sm" className="bg-primary hover:bg-primary/90">
-                <Link href="/#sign-in">Get started</Link>
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="ghost" className="text-muted-foreground" asChild>
+                  <Link href="/#sign-in">Sign in</Link>
+                </Button>
+                <Button size="sm" className="bg-primary hover:bg-primary/90" asChild>
+                  <Link href="/#sign-in">Get started</Link>
+                </Button>
+              </div>
             )}
           </div>
         </div>

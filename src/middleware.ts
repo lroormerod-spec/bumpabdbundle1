@@ -14,7 +14,8 @@ export async function middleware(request: NextRequest) {
     const token = request.cookies.get(COOKIE_NAME)?.value;
 
     if (!token) {
-      return NextResponse.redirect(new URL("/", request.url));
+      const url = new URL("/#sign-in", request.url);
+      return NextResponse.redirect(url);
     }
 
     try {
@@ -27,7 +28,9 @@ export async function middleware(request: NextRequest) {
 
       return NextResponse.next();
     } catch {
-      return NextResponse.redirect(new URL("/", request.url));
+      // Session expired — send back to sign-in
+      const url = new URL("/#sign-in", request.url);
+      return NextResponse.redirect(url);
     }
   }
 
