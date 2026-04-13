@@ -198,3 +198,28 @@ export const giftClaims = pgTable("gift_claims", {
 });
 
 export type GiftClaim = typeof giftClaims.$inferSelect;
+
+// Email templates — editable from admin
+export const emailTemplates = pgTable("email_templates", {
+  id: serial("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  name: text("name").notNull(),
+  subject: text("subject").notNull(),
+  html: text("html").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Email log — every email sent
+export const emailLog = pgTable("email_log", {
+  id: serial("id").primaryKey(),
+  toEmail: text("to_email").notNull(),
+  subject: text("subject").notNull(),
+  templateKey: text("template_key"),
+  status: text("status").notNull().default("sent"),
+  resendId: text("resend_id"),
+  error: text("error"),
+  sentAt: timestamp("sent_at").defaultNow(),
+});
+
+export type EmailTemplate = typeof emailTemplates.$inferSelect;
+export type EmailLog = typeof emailLog.$inferSelect;

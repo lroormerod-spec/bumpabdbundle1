@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Users, ShoppingBag, FileText, BarChart3, Plus, Trash2, Edit, Eye, EyeOff,
-  Loader2, X, Download, Search, MousePointerClick, Pencil, Check, Copy, FileEdit, ChevronRight, ArrowLeft
+  Loader2, X, Download, Search, MousePointerClick, Pencil, Check, Copy, FileEdit, ChevronRight, ArrowLeft,
+  Mail, Send, RefreshCw, CheckCircle, XCircle, AlertCircle
 } from "lucide-react";
 import RichEditor from "@/components/RichEditor";
 import { toast } from "sonner";
@@ -419,6 +420,7 @@ export default function AdminClient({ stats, users, posts: initialPosts, registr
           <TabsTrigger value="affiliate"><MousePointerClick className="w-4 h-4 mr-1.5" />Affiliate Clicks</TabsTrigger>
           <TabsTrigger value="link-health"><ChevronRight className="w-4 h-4 mr-1.5" />Link Health</TabsTrigger>
           <TabsTrigger value="pages"><FileEdit className="w-4 h-4 mr-1.5" />Pages</TabsTrigger>
+          <TabsTrigger value="email"><Mail className="w-4 h-4 mr-1.5" />Email</TabsTrigger>
         </TabsList>
 
         {/* ── Overview ─────────────────────────────────────────────────────── */}
@@ -869,7 +871,254 @@ export default function AdminClient({ stats, users, posts: initialPosts, registr
             )}
           </div>
         </TabsContent>
+
+        {/* ── Email ─────────────────────────────────────────────────────────── */}
+        <TabsContent value="email" className="mt-6 space-y-8">
+          <EmailAdminTab />
+        </TabsContent>
+
       </Tabs>
+    </div>
+  );
+}
+
+// ─── Email Admin Tab (self-contained) ────────────────────────────────────────
+
+interface EmailTemplate {
+  id: number;
+  key: string;
+  name: string;
+  subject: string;
+  html: string;
+  updatedAt: Date | null;
+}
+
+interface EmailLogEntry {
+  id: number;
+  toEmail: string;
+  subject: string;
+  templateKey: string | null;
+  status: string;
+  resendId: string | null;
+  error: string | null;
+  sentAt: Date | null;
+}
+
+function EmailAdminTab() {
+  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+  const [logs, setLogs] = useState<EmailLogEntry[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(true);
+  const [loadingLogs, setLoadingLogs] = useState(true);
+  const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [testEmail, setTestEmail] = useState("");
+  const [testingKey, setTestingKey] = useState<string | null>(null);
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+
+  async function loadTemplates() {
+    setLoadingTemplates(true);
+    const res = await fetch("/api/admin/email-templates");
+    const data = await res.json();
+    setTemplates(data);
+    setLoadingTemplates(false);
+  }
+
+  async function loadLogs() {
+    setLoadingLogs(true);
+    const res = await fetch("/api/admin/email-log");
+    const data = await res.json();
+    setLogs(data);
+    setLoadingLogs(false);
+  }
+
+  useEffect(() => {
+    loadTemplates();
+    loadLogs();
+  }, []);
+
+  async function saveTemplate() {
+    if (!editingTemplate) return;
+    setSaving(true);
+    await fetch("/api/admin/email-templates", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editingTemplate),
+    });
+    setSaving(false);
+    toast.success("Template saved");
+    setTemplates(prev => prev.map(t => t.key === editingTemplate.key ? { ...editingTemplate } : t));
+    setEditingTemplate(null);
+  }
+
+  async function sendTest(key: string) {
+    if (!testEmail.trim()) { toast.error("Enter a test email address first"); return; }
+    setTestingKey(key);
+    const res = await fetch("/api/admin/email-test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ to: testEmail.trim(), templateKey: key }),
+    });
+    const data = await res.json();
+    setTestingKey(null);
+    if (res.ok) {
+      toast.success(`Test email sent to ${testEmail}`);
+      loadLogs();
+    } else {
+      toast.error(data.error || "Failed to send test");
+    }
+  }
+
+  function statusBadge(status: string) {
+    if (status === "sent") return <span className="inline-flex items-center gap-1 text-xs text-green-700 bg-green-50 border border-green-200 rounded-full px-2 py-0.5"><CheckCircle className="w-3 h-3" />Sent</span>;
+    if (status === "sent_fallback") return <span className="inline-flex items-center gap-1 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5"><AlertCircle className="w-3 h-3" />Fallback</span>;
+    return <span className="inline-flex items-center gap-1 text-xs text-red-700 bg-red-50 border border-red-200 rounded-full px-2 py-0.5"><XCircle className="w-3 h-3" />Failed</span>;
+  }
+
+  if (editingTemplate) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={() => setEditingTemplate(null)}>
+            <ArrowLeft className="w-4 h-4 mr-1" /> Back
+          </Button>
+          <h2 className="font-semibold">Editing: {editingTemplate.name}</h2>
+        </div>
+
+        <div className="grid gap-4">
+          <div>
+            <Label className="text-xs text-muted-foreground mb-1 block">Template name</Label>
+            <Input value={editingTemplate.name} onChange={e => setEditingTemplate(t => t ? { ...t, name: e.target.value } : t)} />
+          </div>
+          <div>
+            <Label className="text-xs text-muted-foreground mb-1 block">Subject line</Label>
+            <Input value={editingTemplate.subject} onChange={e => setEditingTemplate(t => t ? { ...t, subject: e.target.value } : t)} />
+            <p className="text-xs text-muted-foreground mt-1">Available variables: <code>&#123;&#123;code&#125;&#125;</code> <code>&#123;&#123;name&#125;&#125;</code> <code>&#123;&#123;magic_link&#125;&#125;</code></p>
+          </div>
+          <div>
+            <Label className="text-xs text-muted-foreground mb-1 block">HTML body</Label>
+            <Textarea
+              value={editingTemplate.html}
+              onChange={e => setEditingTemplate(t => t ? { ...t, html: e.target.value } : t)}
+              rows={20}
+              className="font-mono text-xs"
+            />
+            <p className="text-xs text-muted-foreground mt-1">Use <code>&#123;&#123;code&#125;&#125;</code>, <code>&#123;&#123;name&#125;&#125;</code>, <code>&#123;&#123;magic_link&#125;&#125;</code> as placeholders.</p>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={() => setPreviewHtml(editingTemplate.html)} variant="outline" size="sm">
+              <Eye className="w-4 h-4 mr-1.5" /> Preview
+            </Button>
+            <Button onClick={saveTemplate} disabled={saving}>
+              {saving ? <><Loader2 className="w-4 h-4 mr-1.5 animate-spin" />Saving...</> : <><Check className="w-4 h-4 mr-1.5" />Save template</>}
+            </Button>
+          </div>
+        </div>
+
+        {/* Inline preview */}
+        {previewHtml && (
+          <div className="border border-border rounded-xl overflow-hidden">
+            <div className="bg-muted px-4 py-2 flex items-center justify-between">
+              <span className="text-xs font-medium">Preview</span>
+              <Button variant="ghost" size="sm" onClick={() => setPreviewHtml(null)}><X className="w-4 h-4" /></Button>
+            </div>
+            <iframe srcDoc={previewHtml} className="w-full h-96" sandbox="allow-same-origin" />
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* Test send bar */}
+      <div className="flex items-center gap-3 p-4 rounded-xl bg-muted/40 border border-border">
+        <Mail className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+        <Input
+          placeholder="Test email address"
+          value={testEmail}
+          onChange={e => setTestEmail(e.target.value)}
+          className="max-w-xs"
+        />
+        <p className="text-xs text-muted-foreground">Enter an address, then click Send test on any template below.</p>
+      </div>
+
+      {/* Templates */}
+      <div>
+        <h2 className="font-semibold mb-4">Email templates</h2>
+        {loadingTemplates ? (
+          <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
+        ) : (
+          <div className="space-y-3">
+            {templates.map(t => (
+              <div key={t.key} className="rounded-xl border border-border bg-card p-4 flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <p className="font-medium text-sm">{t.name}</p>
+                    <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded font-mono">{t.key}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate">{t.subject}</p>
+                  {t.updatedAt && <p className="text-xs text-muted-foreground mt-0.5">Last updated: {new Date(t.updatedAt).toLocaleDateString("en-GB")}</p>}
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Button
+                    size="sm" variant="outline"
+                    onClick={() => sendTest(t.key)}
+                    disabled={testingKey === t.key}
+                  >
+                    {testingKey === t.key ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                    <span className="ml-1.5">Send test</span>
+                  </Button>
+                  <Button size="sm" onClick={() => setEditingTemplate({ ...t })}>
+                    <Edit className="w-3.5 h-3.5 mr-1.5" />Edit
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Email log */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold">Send log <span className="text-muted-foreground font-normal text-sm">(last 100)</span></h2>
+          <Button variant="outline" size="sm" onClick={loadLogs} disabled={loadingLogs}>
+            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${loadingLogs ? "animate-spin" : ""}`} />Refresh
+          </Button>
+        </div>
+        {loadingLogs ? (
+          <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
+        ) : logs.length === 0 ? (
+          <p className="text-center text-muted-foreground py-8 text-sm">No emails sent yet.</p>
+        ) : (
+          <div className="rounded-xl border border-border overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50">
+                <tr>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">To</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Subject</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Template</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Status</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Sent</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {logs.map(log => (
+                  <tr key={log.id} className="hover:bg-muted/20">
+                    <td className="px-4 py-3 text-xs font-mono">{log.toEmail}</td>
+                    <td className="px-4 py-3 text-xs max-w-xs truncate">{log.subject}</td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">{log.templateKey ?? "—"}</td>
+                    <td className="px-4 py-3">{statusBadge(log.status)}</td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">
+                      {log.sentAt ? new Date(log.sentAt).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" }) : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
