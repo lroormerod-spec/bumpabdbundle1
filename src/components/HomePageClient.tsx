@@ -444,6 +444,7 @@ export default function HomePageClient({
                         <p className="text-sm text-muted-foreground">
                           We sent a 6-digit code to <strong>{email}</strong>
                         </p>
+                        <p className="text-xs text-muted-foreground mt-1">Can&apos;t see it? Check your spam folder — it occasionally ends up there on first sign-in.</p>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="code">Verification code</Label>
