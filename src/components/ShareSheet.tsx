@@ -3,8 +3,8 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Copy, Check, Mail } from "lucide-react";
-import { SiWhatsapp } from "react-icons/si";
+import { Copy, Check, Mail, MessageSquare } from "lucide-react";
+import { SiWhatsapp, SiFacebook } from "react-icons/si";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -35,6 +35,16 @@ export default function ShareSheet({ url, title, onClose }: Props) {
     window.location.href = `mailto:?subject=${subject}&body=${body}`;
   }
 
+  function shareFacebook() {
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, "_blank", "width=600,height=400");
+  }
+
+  function shareSMS() {
+    const text = `Take a look at our baby registry! ${url}`;
+    // sms: works on iOS and Android
+    window.location.href = `sms:?body=${encodeURIComponent(text)}`;
+  }
+
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
@@ -56,16 +66,21 @@ export default function ShareSheet({ url, title, onClose }: Props) {
 
           {/* Share buttons */}
           <div className="grid grid-cols-2 gap-3">
-            <Button
-              onClick={shareWhatsApp}
-              className="bg-[#25D366] hover:bg-[#1ebe57] text-white gap-2"
-            >
+            <Button onClick={shareWhatsApp} className="bg-[#25D366] hover:bg-[#1ebe57] text-white gap-2">
               <SiWhatsapp className="w-4 h-4" />
               WhatsApp
+            </Button>
+            <Button onClick={shareFacebook} className="bg-[#1877F2] hover:bg-[#166fe5] text-white gap-2">
+              <SiFacebook className="w-4 h-4" />
+              Facebook
             </Button>
             <Button variant="outline" onClick={shareEmail} className="gap-2">
               <Mail className="w-4 h-4" />
               Email
+            </Button>
+            <Button variant="outline" onClick={shareSMS} className="gap-2">
+              <MessageSquare className="w-4 h-4" />
+              SMS
             </Button>
           </div>
 
