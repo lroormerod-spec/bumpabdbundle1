@@ -326,8 +326,7 @@ export default function HomePageClient({
         setPendingUser(data.user);
         setOtpStep("register");
       } else {
-        router.push("/app");
-        router.refresh();
+        window.location.href = "/app";
       }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Invalid code");
@@ -358,8 +357,7 @@ export default function HomePageClient({
         }),
       });
 
-      router.push("/app");
-      router.refresh();
+      window.location.href = "/app";
     } catch {
       toast.error("Something went wrong, please try again");
     } finally {
