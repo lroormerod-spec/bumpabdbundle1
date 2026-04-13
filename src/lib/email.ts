@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { emailTemplates, emailLog } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 
-const resend = new Resend(process.env.RESEND_API_KEY || "re_hNUYRaJP_D89EQkCdkE7vsPT1WmsYWc8o");
+const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = process.env.RESEND_FROM || "Bump & Bundle <hello@bumpandbundle.com>";
 const FALLBACK_FROM = "Bump & Bundle <onboarding@resend.dev>";
 
