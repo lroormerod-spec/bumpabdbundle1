@@ -692,32 +692,7 @@ export default function AdminClient({ stats, users, posts: initialPosts, registr
 
         {/* ── Registries ───────────────────────────────────────────────────── */}
         <TabsContent value="registries" className="mt-6">
-          <div className="space-y-3">
-            {registries.map((registry) => (
-              <div key={registry.id} className="flex items-center gap-4 p-4 rounded-xl border border-border bg-card">
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{registry.title}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    User ID: {registry.userId} · Slug: {registry.shareSlug}
-                    {registry.dueDate && ` · Due: ${new Date(registry.dueDate).toLocaleDateString("en-GB")}`}
-                  </p>
-                </div>
-                <p className="text-xs text-muted-foreground flex-shrink-0 mr-2">
-                  {registry.createdAt ? new Date(registry.createdAt).toLocaleDateString("en-GB") : ""}
-                </p>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive flex-shrink-0"
-                  onClick={async () => {
-                    if (!confirm("Delete this registry and all its items?")) return;
-                    await fetch(`/api/admin/registries?id=${registry.id}`, { method: "DELETE" });
-                    toast.success("Registry deleted");
-                    window.location.reload();
-                  }}>
-                  <Trash2 className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-            ))}
-            {registries.length === 0 && <p className="text-center text-muted-foreground py-10">No registries yet</p>}
-          </div>
+          <RegistriesTab registries={registries} />
         </TabsContent>
 
         {/* ── Users (simple list) ───────────────────────────────────────────── */}
@@ -878,6 +853,128 @@ export default function AdminClient({ stats, users, posts: initialPosts, registr
         </TabsContent>
 
       </Tabs>
+    </div>
+  );
+}
+
+// ─── Registries Tab ─────────────────────────────────────────────────────────
+
+interface RegistryItem {
+  id: number;
+  title: string;
+  price: number | null;
+  image: string | null;
+  retailer: string | null;
+  category: string;
+  isPurchased: boolean;
+  purchasedBy: string | null;
+}
+
+function RegistriesTab({ registries }: { registries: any[] }) {
+  const [expanded, setExpanded] = useState<number | null>(null);
+  const [items, setItems] = useState<Record<number, RegistryItem[]>>({});
+  const [loading, setLoading] = useState<number | null>(null);
+
+  async function loadItems(registryId: number) {
+    if (expanded === registryId) { setExpanded(null); return; }
+    setExpanded(registryId);
+    if (items[registryId]) return; // already loaded
+    setLoading(registryId);
+    const res = await fetch(`/api/admin/registry-items?registryId=${registryId}`);
+    const data = await res.json();
+    setItems(prev => ({ ...prev, [registryId]: data }));
+    setLoading(null);
+  }
+
+  return (
+    <div className="space-y-3">
+      {registries.map((registry) => (
+        <div key={registry.id} className="rounded-xl border border-border bg-card overflow-hidden">
+          {/* Registry row */}
+          <div
+            className="flex items-center gap-4 p-4 cursor-pointer hover:bg-muted/30 transition-colors"
+            onClick={() => loadItems(registry.id)}
+          >
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="font-medium truncate">{registry.title}</p>
+                {registry.dueDate && (
+                  <Badge variant="secondary" className="text-xs flex-shrink-0">
+                    Due {new Date(registry.dueDate).toLocaleDateString("en-GB")}
+                  </Badge>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {registry.shareSlug} · Created {registry.createdAt ? new Date(registry.createdAt).toLocaleDateString("en-GB") : ""}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className="text-xs text-muted-foreground">
+                {loading === registry.id ? "Loading..." : expanded === registry.id ? "Hide items ▲" : "View items ▼"}
+              </span>
+              <Button
+                variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  if (!confirm("Delete this registry and all its items?")) return;
+                  await fetch(`/api/admin/registries?id=${registry.id}`, { method: "DELETE" });
+                  toast.success("Registry deleted");
+                  window.location.reload();
+                }}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Items panel */}
+          {expanded === registry.id && (
+            <div className="border-t border-border bg-muted/20">
+              {loading === registry.id ? (
+                <div className="flex justify-center py-6">
+                  <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : items[registry.id]?.length === 0 ? (
+                <p className="text-center text-muted-foreground py-6 text-sm">No items in this registry yet.</p>
+              ) : (
+                <div className="divide-y divide-border">
+                  {(items[registry.id] || []).map(item => (
+                    <div key={item.id} className="flex items-center gap-3 px-4 py-3">
+                      {item.image ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={item.image} alt={item.title} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                      ) : (
+                        <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                          <ShoppingBag className="w-5 h-5 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium line-clamp-1">{item.title}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {item.price && <span className="text-xs text-primary font-semibold">£{item.price.toFixed(2)}</span>}
+                          {item.retailer && <span className="text-xs text-muted-foreground">{item.retailer}</span>}
+                          <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{item.category}</span>
+                        </div>
+                      </div>
+                      <div className="flex-shrink-0">
+                        {item.isPurchased ? (
+                          <span className="inline-flex items-center gap-1 text-xs text-green-700 bg-green-50 border border-green-200 rounded-full px-2 py-0.5">
+                            <CheckCircle className="w-3 h-3" />
+                            {item.purchasedBy ? `Bought by ${item.purchasedBy}` : "Purchased"}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Needed</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+      {registries.length === 0 && <p className="text-center text-muted-foreground py-10">No registries yet</p>}
     </div>
   );
 }
