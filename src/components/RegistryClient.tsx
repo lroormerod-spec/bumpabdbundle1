@@ -23,6 +23,7 @@ interface SearchResult {
   retailer: string | null;
   link: string | null;
   isLowest: boolean;
+  otherPrices?: { retailer: string; price: number }[];
 }
 
 interface RegistryItem {
@@ -450,23 +451,36 @@ export default function RegistryClient({ registry, initialItems }: Props) {
                       </div>
                     )}
                     {result.isLowest && (
-                      <Badge className="absolute top-2 left-2 bg-green-600 text-white text-xs shadow">
-                        Lowest price
-                      </Badge>
+                      <div className="absolute top-2 left-2 bg-green-600 text-white text-xs font-semibold px-2 py-1 rounded-lg shadow flex items-center gap-1">
+                        <span>🏷️</span> Best price
+                      </div>
                     )}
                   </div>
                   <CardContent className="p-4">
                     <p className="font-medium text-sm line-clamp-2 mb-2 leading-snug">{result.title}</p>
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center justify-between mb-1">
                       {result.price ? (
                         <span className="text-lg font-bold text-primary">{formatPrice(result.price)}</span>
                       ) : (
                         <span className="text-sm text-muted-foreground">Price unavailable</span>
                       )}
                       {result.retailer && (
-                        <span className="text-xs text-muted-foreground ml-2">{result.retailer}</span>
+                        <span className="text-xs text-muted-foreground">{result.retailer}</span>
                       )}
                     </div>
+                    {/* Price comparison strip */}
+                    {result.otherPrices && result.otherPrices.length > 0 ? (
+                      <div className="flex flex-wrap items-center gap-1.5 mb-3">
+                        {result.otherPrices.map((op, idx) => (
+                          <span key={idx} className="text-[10px] bg-muted rounded px-1.5 py-0.5 text-muted-foreground">
+                            {op.retailer.split(" ")[0]} {formatPrice(op.price)}
+                          </span>
+                        ))}
+                        <span className="text-[10px] text-muted-foreground">also available</span>
+                      </div>
+                    ) : (
+                      <p className="text-[10px] text-muted-foreground mb-3">Compared across UK retailers</p>
+                    )}
                     <div className="flex gap-2">
                       {(() => {
                         const alreadyAdded = myItems.some(i => i.title === result.title);

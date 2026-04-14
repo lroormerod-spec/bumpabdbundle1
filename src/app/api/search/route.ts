@@ -64,10 +64,62 @@ function filterBabyResults(results: any[]): any[] {
   });
 }
 
+// Known UK baby retailers for logo display
+const RETAILER_LOGOS: Record<string, string> = {
+  "amazon": "https://logo.clearbit.com/amazon.co.uk",
+  "john lewis": "https://logo.clearbit.com/johnlewis.com",
+  "argos": "https://logo.clearbit.com/argos.co.uk",
+  "mamas & papas": "https://logo.clearbit.com/mamasandpapas.com",
+  "mamas and papas": "https://logo.clearbit.com/mamasandpapas.com",
+  "mothercare": "https://logo.clearbit.com/mothercare.com",
+  "boots": "https://logo.clearbit.com/boots.com",
+  "smyths": "https://logo.clearbit.com/smythstoys.com",
+  "very": "https://logo.clearbit.com/very.co.uk",
+  "next": "https://logo.clearbit.com/next.co.uk",
+  "ebay": "https://logo.clearbit.com/ebay.co.uk",
+  "tesco": "https://logo.clearbit.com/tesco.com",
+  "asda": "https://logo.clearbit.com/asda.com",
+  "george": "https://logo.clearbit.com/asda.com",
+  "wayfair": "https://logo.clearbit.com/wayfair.co.uk",
+  "dunelm": "https://logo.clearbit.com/dunelm.com",
+  "bambino": "https://logo.clearbit.com/bambino.co.uk",
+};
+
+export function getRetailerLogo(retailer: string): string | null {
+  if (!retailer) return null;
+  const lower = retailer.toLowerCase();
+  for (const [key, url] of Object.entries(RETAILER_LOGOS)) {
+    if (lower.includes(key)) return url;
+  }
+  return null;
+}
+
 function annotateResults(results: any[]) {
   const prices = results.map((r: any) => r.price).filter((p: number | null): p is number => p !== null);
   const lowestPrice = prices.length > 0 ? Math.min(...prices) : null;
-  return results.map((r: any) => ({ ...r, isLowest: lowestPrice !== null && r.price === lowestPrice }));
+
+  // Group by normalised title to find same product at different retailers
+  const titleMap = new Map<string, { retailer: string; price: number }[]>();
+  for (const r of results) {
+    if (!r.price || !r.retailer) continue;
+    // Normalise title: lowercase, strip punctuation, first 60 chars
+    const normTitle = r.title.toLowerCase().replace(/[^a-z0-9 ]/g, "").trim().slice(0, 60);
+    if (!titleMap.has(normTitle)) titleMap.set(normTitle, []);
+    titleMap.get(normTitle)!.push({ retailer: r.retailer, price: r.price });
+  }
+
+  return results.map((r: any) => {
+    const normTitle = r.title.toLowerCase().replace(/[^a-z0-9 ]/g, "").trim().slice(0, 60);
+    const others = (titleMap.get(normTitle) || [])
+      .filter(o => o.retailer !== r.retailer)
+      .sort((a, b) => a.price - b.price)
+      .slice(0, 3);
+    return {
+      ...r,
+      isLowest: lowestPrice !== null && r.price === lowestPrice,
+      otherPrices: others,
+    };
+  });
 }
 
 async function fetchFromSerpApi(query: string, page = 1) {
