@@ -469,21 +469,23 @@ export default function RegistryClient({ registry, initialItems }: Props) {
                         <span className="text-xs text-muted-foreground">{result.retailer}</span>
                       )}
                     </div>
-                    {/* Retailer count + price comparison */}
+                    {/* Price comparison — only show if we actually have other prices for this product */}
                     <div className="mb-3">
-                      {result.retailerCount && result.retailerCount > 1 && (
-                        <p className="text-[10px] text-muted-foreground mb-1">
-                          Compared across <span className="font-semibold text-foreground">{result.retailerCount}</span> UK retailers
-                        </p>
-                      )}
-                      {result.otherPrices && result.otherPrices.length > 0 && (
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          {result.otherPrices.map((op, idx) => (
-                            <span key={idx} className="text-[10px] bg-muted rounded px-1.5 py-0.5 text-muted-foreground">
-                              {op.retailer.split(" ")[0]} {formatPrice(op.price)}
-                            </span>
-                          ))}
-                        </div>
+                      {result.otherPrices && result.otherPrices.length > 0 ? (
+                        <>
+                          <p className="text-[10px] text-muted-foreground mb-1">
+                            Also at {result.otherPrices.length} other {result.otherPrices.length === 1 ? "retailer" : "retailers"}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {result.otherPrices.map((op, idx) => (
+                              <span key={idx} className="text-[10px] bg-muted rounded px-1.5 py-0.5 text-muted-foreground">
+                                {op.retailer.split(" ")[0]} {formatPrice(op.price)}
+                              </span>
+                            ))}
+                          </div>
+                        </>
+                      ) : (
+                        <p className="text-[10px] text-muted-foreground">From {result.retailer}</p>
                       )}
                     </div>
                     <div className="flex gap-2">
