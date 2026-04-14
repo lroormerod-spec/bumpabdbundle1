@@ -8,6 +8,39 @@ function normaliseQuery(q: string) {
   return q.toLowerCase().trim().replace(/\s+/g, " ");
 }
 
+// Words that already make a query clearly baby-related — no suffix needed
+const BABY_TERMS = [
+  "baby", "newborn", "infant", "toddler", "nursery", "pram", "stroller",
+  "pushchair", "buggy", "cot", "crib", "moses basket", "nappy", "diaper",
+  "breast pump", "bottle", "steriliser", "sterilizer", "feeding", "weaning",
+  "car seat", "bouncer", "highchair", "babygrow", "sleepsuit", "monitor",
+  "maternity", "pregnancy", "bump", "swaddle", "nappy", "wipes", "dummy",
+  "teether", "rattle", "play mat", "baby monitor", "silver cross", "icandy",
+  "uppababy", "bugaboo", "joie", "graco", "mamas", "chicco", "tommee",
+  "medela", "mothercare", "snuzpod", "sleepyhead"
+];
+
+// Categories/keywords that clearly indicate non-baby products
+const EXCLUDE_TERMS = [
+  "jewellery", "jewelry", "ring", "necklace", "bracelet", "earring",
+  "pendant", "diamond", "gold chain", "silver chain", "watch", "handbag",
+  "perfume", "cologne", "makeup", "lipstick", "mascara", "eyeshadow",
+  "pet food", "dog food", "cat food", "adult toy", "lingerie"
+];
+
+function buildSearchQuery(q: string): string {
+  const lower = q.toLowerCase();
+  const alreadyBaby = BABY_TERMS.some(term => lower.includes(term));
+  return alreadyBaby ? q : `${q} baby`;
+}
+
+function filterBabyResults(results: any[]): any[] {
+  return results.filter(r => {
+    const title = (r.title || "").toLowerCase();
+    return !EXCLUDE_TERMS.some(term => title.includes(term));
+  });
+}
+
 function annotateResults(results: any[]) {
   const prices = results.map((r: any) => r.price).filter((p: number | null): p is number => p !== null);
   const lowestPrice = prices.length > 0 ? Math.min(...prices) : null;
@@ -42,6 +75,7 @@ export async function GET(request: NextRequest) {
     if (!q) return NextResponse.json({ error: "Query required" }, { status: 400 });
 
     const normalisedQuery = normaliseQuery(q);
+    const searchQuery = buildSearchQuery(normalisedQuery);
     const cacheKey = page > 1 ? `${normalisedQuery}__page${page}` : normalisedQuery;
 
     const sql = neon(process.env.DATABASE_URL!);
@@ -70,11 +104,12 @@ export async function GET(request: NextRequest) {
       }
 
       // Stale — return stale results immediately, refresh in background
-      const staleResults = annotateResults(cached.results as any[]);
+      const staleResults = annotateResults(filterBabyResults(cached.results as any[]));
       // Background refresh (don't await)
-      fetchFromSerpApi(normalisedQuery, page).then(fresh => {
+      fetchFromSerpApi(searchQuery, page).then(fresh => {
+        const filtered = filterBabyResults(fresh);
         sql`
-          INSERT INTO search_cache (query, results, updated_at) VALUES (${cacheKey}, ${JSON.stringify(fresh)}, NOW())
+          INSERT INTO search_cache (query, results, updated_at) VALUES (${cacheKey}, ${JSON.stringify(filtered)}, NOW())
           ON CONFLICT (query) DO UPDATE SET results = EXCLUDED.results, updated_at = NOW(), hit_count = search_cache.hit_count + 1
         `.catch(() => {});
       }).catch(() => {});
@@ -88,7 +123,8 @@ export async function GET(request: NextRequest) {
     }
 
     // ── Cache miss — fetch live ───────────────────────────────────────────────
-    const results = await fetchFromSerpApi(normalisedQuery, page);
+    const rawResults = await fetchFromSerpApi(searchQuery, page);
+    const results = filterBabyResults(rawResults);
 
     // Store in cache async (don't block the response)
     sql`
