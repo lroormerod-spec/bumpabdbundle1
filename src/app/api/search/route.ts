@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
 
-const CACHE_TTL_HOURS = 6;
+const CACHE_TTL_HOURS = 24; // Extended to 24hrs — baby product prices don't change hourly
 const SERPAPI_KEY = process.env.SERPAPI_KEY;
+
+// In-memory cache — survives across requests in the same Vercel instance
+// Eliminates DB round-trip for repeat searches
+const memCache = new Map<string, { results: any[]; ts: number }>();
+const MEM_TTL_MS = 10 * 60 * 1000; // 10 minutes in memory
 
 function normaliseQuery(q: string) {
   return q.toLowerCase().trim().replace(/\s+/g, " ");
@@ -159,55 +164,59 @@ export async function GET(request: NextRequest) {
     const searchQuery = buildSearchQuery(normalisedQuery);
     const cacheKey = page > 1 ? `${normalisedQuery}__page${page}` : normalisedQuery;
 
-    const sql = neon(process.env.DATABASE_URL!);
-
-    // ── Check cache ──────────────────────────────────────────────────────────
-    const [cached] = await sql`
-      SELECT results, updated_at, hit_count 
-      FROM search_cache 
-      WHERE query = ${cacheKey}
-      LIMIT 1
-    `;
-
-    if (cached) {
-      const ageHours = (Date.now() - new Date(cached.updated_at).getTime()) / (1000 * 60 * 60);
-
-      if (ageHours < CACHE_TTL_HOURS) {
-        // Fresh cache hit — return immediately, bump hit count async
-        sql`UPDATE search_cache SET hit_count = hit_count + 1 WHERE query = ${cacheKey}`.catch(() => {});
-        const results = annotateResults(cached.results as any[]);
-        return NextResponse.json({
-          results,
-          page,
-          hasMore: results.length === 40,
-          cached: true,
-        });
-      }
-
-      // Stale — return stale results immediately, refresh in background
-      const staleResults = annotateResults(filterBabyResults(cached.results as any[]));
-      // Background refresh (don't await)
-      fetchFromSerpApi(searchQuery, page).then(fresh => {
-        const filtered = filterBabyResults(fresh);
-        sql`
-          INSERT INTO search_cache (query, results, updated_at) VALUES (${cacheKey}, ${JSON.stringify(filtered)}, NOW())
-          ON CONFLICT (query) DO UPDATE SET results = EXCLUDED.results, updated_at = NOW(), hit_count = search_cache.hit_count + 1
-        `.catch(() => {});
-      }).catch(() => {});
-
+    // ── 1. Memory cache (fastest — no DB round trip) ─────────────────────────
+    const mem = memCache.get(cacheKey);
+    if (mem && Date.now() - mem.ts < MEM_TTL_MS) {
       return NextResponse.json({
-        results: staleResults,
+        results: annotateResults(mem.results),
         page,
-        hasMore: staleResults.length === 40,
+        hasMore: mem.results.length >= 40,
         cached: true,
       });
     }
 
-    // ── Cache miss — fetch live ───────────────────────────────────────────────
+    const sql = neon(process.env.DATABASE_URL!);
+
+    // ── 2. DB cache ───────────────────────────────────────────────────────────
+    const [cached] = await sql`
+      SELECT results, updated_at FROM search_cache WHERE query = ${cacheKey} LIMIT 1
+    `;
+
+    if (cached) {
+      const ageHours = (Date.now() - new Date(cached.updated_at).getTime()) / (1000 * 60 * 60);
+      const filtered = filterBabyResults(cached.results as any[]);
+
+      // Store in memory for next request
+      memCache.set(cacheKey, { results: filtered, ts: Date.now() });
+
+      // Always return immediately — refresh in background if stale
+      if (ageHours >= CACHE_TTL_HOURS) {
+        fetchFromSerpApi(searchQuery, page).then(fresh => {
+          const f = filterBabyResults(fresh);
+          memCache.set(cacheKey, { results: f, ts: Date.now() });
+          sql`
+            INSERT INTO search_cache (query, results, updated_at) VALUES (${cacheKey}, ${JSON.stringify(f)}, NOW())
+            ON CONFLICT (query) DO UPDATE SET results = EXCLUDED.results, updated_at = NOW(), hit_count = search_cache.hit_count + 1
+          `.catch(() => {});
+        }).catch(() => {});
+      } else {
+        sql`UPDATE search_cache SET hit_count = hit_count + 1 WHERE query = ${cacheKey}`.catch(() => {});
+      }
+
+      return NextResponse.json({
+        results: annotateResults(filtered),
+        page,
+        hasMore: filtered.length >= 40,
+        cached: true,
+      });
+    }
+
+    // ── 3. Cache miss — fetch live from SerpAPI ───────────────────────────────
     const rawResults = await fetchFromSerpApi(searchQuery, page);
     const results = filterBabyResults(rawResults);
 
-    // Store in cache async (don't block the response)
+    // Store in both caches
+    memCache.set(cacheKey, { results, ts: Date.now() });
     sql`
       INSERT INTO search_cache (query, results, updated_at) VALUES (${cacheKey}, ${JSON.stringify(results)}, NOW())
       ON CONFLICT (query) DO UPDATE SET results = EXCLUDED.results, updated_at = NOW(), hit_count = search_cache.hit_count + 1
@@ -216,7 +225,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       results: annotateResults(results),
       page,
-      hasMore: results.length === 40,
+      hasMore: results.length >= 40,
       cached: false,
     });
   } catch (err) {
