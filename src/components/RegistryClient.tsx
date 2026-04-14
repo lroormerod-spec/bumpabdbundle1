@@ -23,8 +23,16 @@ interface SearchResult {
   retailer: string | null;
   link: string | null;
   isLowest: boolean;
+  immersiveToken?: string | null;
   otherPrices?: { retailer: string; price: number }[];
   retailerCount?: number;
+}
+
+interface EnrichedPrice {
+  lowestPrice: number;
+  lowestRetailer: string;
+  allPrices: { retailer: string; price: number; url: string | null }[];
+  retailerCount: number;
 }
 
 interface RegistryItem {
@@ -107,6 +115,79 @@ function ResultSkeleton() {
         <Skeleton className="h-8 w-full mt-1" />
       </div>
     </div>
+  );
+}
+
+// Price card component that fetches real cheapest price
+function PriceDisplay({ result }: { result: SearchResult }) {
+  const [enriched, setEnriched] = useState<EnrichedPrice | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!result.immersiveToken) return;
+    setLoading(true);
+    fetch(`/api/product-prices?token=${encodeURIComponent(result.immersiveToken)}`)
+      .then(r => r.json())
+      .then(data => {
+        if (!data.notFound && !data.error) setEnriched(data);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [result.immersiveToken]);
+
+  const displayPrice = enriched ? enriched.lowestPrice : result.price;
+  const displayRetailer = enriched ? enriched.lowestRetailer : result.retailer;
+  const isCheapest = enriched && enriched.retailerCount > 1;
+
+  return (
+    <>
+      <div className="mb-1">
+        <div className="flex items-center gap-2">
+          {displayPrice ? (
+            <span className="text-lg font-bold text-primary">{formatPrice(displayPrice)}</span>
+          ) : (
+            <span className="text-sm text-muted-foreground">Price unavailable</span>
+          )}
+          {loading && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
+        </div>
+      </div>
+      <div className="mb-3">
+        {enriched && enriched.retailerCount > 1 ? (
+          <>
+            <p className="text-[10px] text-green-700 font-medium mb-1">
+              Cheapest from {enriched.retailerCount} retailers
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {enriched.allPrices.slice(0, 3).map((p, i) => (
+                <span key={i} className={`text-[10px] rounded px-1.5 py-0.5 ${
+                  i === 0 ? "bg-green-50 text-green-700 font-medium" : "bg-muted text-muted-foreground"
+                }`}>
+                  {p.retailer.split(" ")[0]} {formatPrice(p.price)}
+                </span>
+              ))}
+              {enriched.allPrices.length > 3 && (
+                <span className="text-[10px] text-muted-foreground">+{enriched.allPrices.length - 3} more</span>
+              )}
+            </div>
+          </>
+        ) : result.otherPrices && result.otherPrices.length > 0 ? (
+          <>
+            <p className="text-[10px] text-muted-foreground mb-1">
+              Also at {result.otherPrices.length} other {result.otherPrices.length === 1 ? "retailer" : "retailers"}
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {result.otherPrices.map((op, i) => (
+                <span key={i} className="text-[10px] bg-muted rounded px-1.5 py-0.5 text-muted-foreground">
+                  {op.retailer.split(" ")[0]} {formatPrice(op.price)}
+                </span>
+              ))}
+            </div>
+          </>
+        ) : (
+          <p className="text-[10px] text-muted-foreground">From {displayRetailer}</p>
+        )}
+      </div>
+    </>
   );
 }
 
@@ -254,6 +335,7 @@ export default function RegistryClient({ registry, initialItems }: Props) {
           retailer: result.retailer,
           url: result.link,
           category: guessCategory(result.title, committedQuery),
+          productToken: result.immersiveToken || null,
         }),
       });
       const data = await res.json();
@@ -459,32 +541,7 @@ export default function RegistryClient({ registry, initialItems }: Props) {
                   </div>
                   <CardContent className="p-4">
                     <p className="font-medium text-sm line-clamp-2 mb-2 leading-snug">{result.title}</p>
-                    <div className="mb-1">
-                      {result.price ? (
-                        <span className="text-lg font-bold text-primary">{formatPrice(result.price)}</span>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">Price unavailable</span>
-                      )}
-                    </div>
-                    {/* Price comparison — only show if we actually have other prices for this product */}
-                    <div className="mb-3">
-                      {result.otherPrices && result.otherPrices.length > 0 ? (
-                        <>
-                          <p className="text-[10px] text-muted-foreground mb-1">
-                            Also at {result.otherPrices.length} other {result.otherPrices.length === 1 ? "retailer" : "retailers"}
-                          </p>
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            {result.otherPrices.map((op, idx) => (
-                              <span key={idx} className="text-[10px] bg-muted rounded px-1.5 py-0.5 text-muted-foreground">
-                                {op.retailer.split(" ")[0]} {formatPrice(op.price)}
-                              </span>
-                            ))}
-                          </div>
-                        </>
-                      ) : (
-                        <p className="text-[10px] text-muted-foreground">From {result.retailer}</p>
-                      )}
-                    </div>
+                    <PriceDisplay result={result} />
                     <div className="flex gap-2">
                       {(() => {
                         const alreadyAdded = myItems.some(i => i.title === result.title);

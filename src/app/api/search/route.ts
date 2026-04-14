@@ -133,6 +133,22 @@ function annotateResults(results: any[]) {
   });
 }
 
+// Fire-and-forget price enrichment for results with immersive tokens
+function enrichResultsAsync(results: any[], baseUrl: string) {
+  const toEnrich = results.filter(r => r.immersiveToken);
+  if (toEnrich.length === 0) return;
+  // Stagger requests to avoid rate limiting
+  toEnrich.forEach((r, i) => {
+    setTimeout(() => {
+      fetch(`${baseUrl}/api/product-prices`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: r.immersiveToken, title: r.title }),
+      }).catch(() => {});
+    }, i * 300); // 300ms apart
+  });
+}
+
 async function fetchFromSerpApi(query: string, page = 1) {
   const start = (page - 1) * 40;
   const url = `https://serpapi.com/search.json?engine=google_shopping&q=${encodeURIComponent(query)}&gl=uk&hl=en&api_key=${SERPAPI_KEY}&num=40&start=${start}`;
@@ -222,8 +238,14 @@ export async function GET(request: NextRequest) {
       ON CONFLICT (query) DO UPDATE SET results = EXCLUDED.results, updated_at = NOW(), hit_count = search_cache.hit_count + 1
     `.catch(() => {});
 
+    const annotated = annotateResults(results);
+
+    // Trigger background price enrichment for all results with immersive tokens
+    const baseUrl = req.headers.get("origin") || "https://bumpandbundle.com";
+    enrichResultsAsync(annotated, baseUrl);
+
     return NextResponse.json({
-      results: annotateResults(results),
+      results: annotated,
       page,
       hasMore: results.length >= 40,
       cached: false,

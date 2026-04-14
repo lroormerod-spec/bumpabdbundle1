@@ -50,6 +50,7 @@ export const items = pgTable("items", {
   purchasedBy: text("purchased_by"),
   priceAlert: boolean("price_alert").notNull().default(false),
   lastKnownPrice: real("last_known_price"),
+  productToken: text("product_token"), // SerpAPI immersive token for price lookup
   createdAt: timestamp("created_at").defaultNow(),
 });
 

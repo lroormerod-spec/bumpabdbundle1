@@ -60,6 +60,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         url: body.url || null,
         category: body.category || "Other",
         notes: body.notes || null,
+        productToken: body.productToken || null,
       })
       .returning();
 
