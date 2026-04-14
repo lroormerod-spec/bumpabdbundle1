@@ -24,6 +24,7 @@ interface SearchResult {
   link: string | null;
   isLowest: boolean;
   otherPrices?: { retailer: string; price: number }[];
+  retailerCount?: number;
 }
 
 interface RegistryItem {
@@ -468,19 +469,23 @@ export default function RegistryClient({ registry, initialItems }: Props) {
                         <span className="text-xs text-muted-foreground">{result.retailer}</span>
                       )}
                     </div>
-                    {/* Price comparison strip */}
-                    {result.otherPrices && result.otherPrices.length > 0 ? (
-                      <div className="flex flex-wrap items-center gap-1.5 mb-3">
-                        {result.otherPrices.map((op, idx) => (
-                          <span key={idx} className="text-[10px] bg-muted rounded px-1.5 py-0.5 text-muted-foreground">
-                            {op.retailer.split(" ")[0]} {formatPrice(op.price)}
-                          </span>
-                        ))}
-                        <span className="text-[10px] text-muted-foreground">also available</span>
-                      </div>
-                    ) : (
-                      <p className="text-[10px] text-muted-foreground mb-3">Compared across UK retailers</p>
-                    )}
+                    {/* Retailer count + price comparison */}
+                    <div className="mb-3">
+                      {result.retailerCount && result.retailerCount > 1 && (
+                        <p className="text-[10px] text-muted-foreground mb-1">
+                          Compared across <span className="font-semibold text-foreground">{result.retailerCount}</span> UK retailers
+                        </p>
+                      )}
+                      {result.otherPrices && result.otherPrices.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {result.otherPrices.map((op, idx) => (
+                            <span key={idx} className="text-[10px] bg-muted rounded px-1.5 py-0.5 text-muted-foreground">
+                              {op.retailer.split(" ")[0]} {formatPrice(op.price)}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     <div className="flex gap-2">
                       {(() => {
                         const alreadyAdded = myItems.some(i => i.title === result.title);

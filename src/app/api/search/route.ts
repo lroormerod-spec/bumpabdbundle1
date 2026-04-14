@@ -108,6 +108,11 @@ function annotateResults(results: any[]) {
     titleMap.get(normTitle)!.push({ retailer: r.retailer, price: r.price });
   }
 
+  // Count unique retailers across all results
+  const uniqueRetailerCount = new Set(
+    results.filter((r: any) => r.retailer).map((r: any) => r.retailer.toLowerCase().split(" ")[0])
+  ).size;
+
   return results.map((r: any) => {
     const normTitle = r.title.toLowerCase().replace(/[^a-z0-9 ]/g, "").trim().slice(0, 60);
     const others = (titleMap.get(normTitle) || [])
@@ -118,6 +123,7 @@ function annotateResults(results: any[]) {
       ...r,
       isLowest: lowestPrice !== null && r.price === lowestPrice,
       otherPrices: others,
+      retailerCount: uniqueRetailerCount,
     };
   });
 }
