@@ -137,7 +137,6 @@ function PriceDisplay({ result }: { result: SearchResult }) {
 
   const displayPrice = enriched ? enriched.lowestPrice : result.price;
   const displayRetailer = enriched ? enriched.lowestRetailer : result.retailer;
-  const isCheapest = enriched && enriched.retailerCount > 1;
 
   return (
     <>

@@ -173,6 +173,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const q = searchParams.get("q");
     const page = parseInt(searchParams.get("page") || "1");
+    const baseUrl = request.headers.get("origin") || "https://bumpandbundle.com";
 
     if (!q) return NextResponse.json({ error: "Query required" }, { status: 400 });
 
@@ -241,7 +242,6 @@ export async function GET(request: NextRequest) {
     const annotated = annotateResults(results);
 
     // Trigger background price enrichment for all results with immersive tokens
-    const baseUrl = req.headers.get("origin") || "https://bumpandbundle.com";
     enrichResultsAsync(annotated, baseUrl);
 
     return NextResponse.json({
