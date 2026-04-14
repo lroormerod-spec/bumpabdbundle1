@@ -870,20 +870,26 @@ interface RegistryItem {
   purchasedBy: string | null;
 }
 
-function RegistriesTab({ registries }: { registries: any[] }) {
+function RegistriesTab({ registries }: { registries: Registry[] }) {
   const [expanded, setExpanded] = useState<number | null>(null);
-  const [items, setItems] = useState<Record<number, RegistryItem[]>>({});
-  const [loading, setLoading] = useState<number | null>(null);
+  const [itemsMap, setItemsMap] = useState<Record<number, RegistryItem[]>>({});
+  const [loadingId, setLoadingId] = useState<number | null>(null);
 
-  async function loadItems(registryId: number) {
-    if (expanded === registryId) { setExpanded(null); return; }
+  async function toggleRegistry(registryId: number) {
+    if (expanded === registryId) {
+      setExpanded(null);
+      return;
+    }
     setExpanded(registryId);
-    if (items[registryId]) return; // already loaded
-    setLoading(registryId);
-    const res = await fetch(`/api/admin/registry-items?registryId=${registryId}`);
-    const data = await res.json();
-    setItems(prev => ({ ...prev, [registryId]: data }));
-    setLoading(null);
+    if (itemsMap[registryId] !== undefined) return; // already loaded
+    setLoadingId(registryId);
+    try {
+      const res = await fetch(`/api/admin/registry-items?registryId=${registryId}`);
+      const data = await res.json();
+      setItemsMap(prev => ({ ...prev, [registryId]: data }));
+    } finally {
+      setLoadingId(null);
+    }
   }
 
   return (
@@ -893,7 +899,7 @@ function RegistriesTab({ registries }: { registries: any[] }) {
           {/* Registry row */}
           <div
             className="flex items-center gap-4 p-4 cursor-pointer hover:bg-muted/30 transition-colors"
-            onClick={() => loadItems(registry.id)}
+            onClick={() => toggleRegistry(registry.id)}
           >
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
@@ -910,7 +916,7 @@ function RegistriesTab({ registries }: { registries: any[] }) {
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <span className="text-xs text-muted-foreground">
-                {loading === registry.id ? "Loading..." : expanded === registry.id ? "Hide items ▲" : "View items ▼"}
+                {loadingId === registry.id ? "Loading..." : expanded === registry.id ? "Hide items ▲" : "View items ▼"}
               </span>
               <Button
                 variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"
@@ -930,15 +936,15 @@ function RegistriesTab({ registries }: { registries: any[] }) {
           {/* Items panel */}
           {expanded === registry.id && (
             <div className="border-t border-border bg-muted/20">
-              {loading === registry.id ? (
+              {loadingId === registry.id ? (
                 <div className="flex justify-center py-6">
                   <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                 </div>
-              ) : items[registry.id]?.length === 0 ? (
+              ) : itemsMap[registry.id]?.length === 0 ? (
                 <p className="text-center text-muted-foreground py-6 text-sm">No items in this registry yet.</p>
               ) : (
                 <div className="divide-y divide-border">
-                  {(items[registry.id] || []).map(item => (
+                  {(itemsMap[registry.id] || []).map(item => (
                     <div key={item.id} className="flex items-center gap-3 px-4 py-3">
                       {item.image ? (
                         // eslint-disable-next-line @next/next/no-img-element
