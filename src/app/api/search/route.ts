@@ -8,36 +8,59 @@ function normaliseQuery(q: string) {
   return q.toLowerCase().trim().replace(/\s+/g, " ");
 }
 
-// Words that already make a query clearly baby-related — no suffix needed
+// Well-known baby brands — no suffix needed, search as-is
+const BABY_BRANDS = [
+  "silver cross", "icandy", "uppababy", "bugaboo", "joie", "graco",
+  "mamas and papas", "mamas & papas", "chicco", "tommee tippee", "medela",
+  "mothercare", "snuzpod", "sleepyhead", "ergobaby", "babybjorn",
+  "maxi-cosi", "maxicosi", "cybex", "britax", "cosatto", "hauck",
+  "phil and teds", "mountain buggy", "ickle bubba", "munchkin",
+];
+
+// Words that already make a query clearly baby-related
 const BABY_TERMS = [
   "baby", "newborn", "infant", "toddler", "nursery", "pram", "stroller",
   "pushchair", "buggy", "cot", "crib", "moses basket", "nappy", "diaper",
   "breast pump", "bottle", "steriliser", "sterilizer", "feeding", "weaning",
   "car seat", "bouncer", "highchair", "babygrow", "sleepsuit", "monitor",
-  "maternity", "pregnancy", "bump", "swaddle", "nappy", "wipes", "dummy",
-  "teether", "rattle", "play mat", "baby monitor", "silver cross", "icandy",
-  "uppababy", "bugaboo", "joie", "graco", "mamas", "chicco", "tommee",
-  "medela", "mothercare", "snuzpod", "sleepyhead"
+  "maternity", "pregnancy", "swaddle", "wipes", "dummy", "teether",
+  "rattle", "play mat", "baby monitor",
 ];
 
-// Categories/keywords that clearly indicate non-baby products
-const EXCLUDE_TERMS = [
-  "jewellery", "jewelry", "ring", "necklace", "bracelet", "earring",
-  "pendant", "diamond", "gold chain", "silver chain", "watch", "handbag",
-  "perfume", "cologne", "makeup", "lipstick", "mascara", "eyeshadow",
-  "pet food", "dog food", "cat food", "adult toy", "lingerie"
+// Product types/keywords in titles that clearly indicate non-baby products
+const EXCLUDE_TITLE_TERMS = [
+  "bangle", "jewellery", "jewelry", "necklace", "bracelet", "earring",
+  "pendant", "diamond", "gold chain", "silver chain", "sterling silver",
+  "925 silver", "watch", "handbag", "purse", "perfume", "cologne",
+  "makeup", "lipstick", "mascara", "eyeshadow", "foundation",
+  "pet food", "dog food", "cat food", "adult toy", "lingerie",
+  "ring", "tiara", "brooch", "anklet",
+];
+
+// Retailers known to sell non-baby products that slip through
+const EXCLUDE_RETAILERS = [
+  "EDS Jewels", "The Little Keeps", "Baby Bangles", "Jewellery",
 ];
 
 function buildSearchQuery(q: string): string {
   const lower = q.toLowerCase();
-  const alreadyBaby = BABY_TERMS.some(term => lower.includes(term));
-  return alreadyBaby ? q : `${q} baby`;
+  // Known baby brand — search as-is, no suffix
+  if (BABY_BRANDS.some(brand => lower.includes(brand))) return q;
+  // Already has baby context
+  if (BABY_TERMS.some(term => lower.includes(term))) return q;
+  // Ambiguous — append "baby" to force baby product context
+  return `${q} baby`;
 }
 
 function filterBabyResults(results: any[]): any[] {
   return results.filter(r => {
     const title = (r.title || "").toLowerCase();
-    return !EXCLUDE_TERMS.some(term => title.includes(term));
+    const retailer = (r.retailer || "");
+    // Block by title keywords
+    if (EXCLUDE_TITLE_TERMS.some(term => title.includes(term))) return false;
+    // Block by known non-baby retailers
+    if (EXCLUDE_RETAILERS.some(ret => retailer.includes(ret))) return false;
+    return true;
   });
 }
 

@@ -108,7 +108,7 @@ function ResultSkeleton() {
   );
 }
 
-function ViewButton({ title, retailer }: { title: string; retailer: string }) {
+function ViewButton({ title, retailer, showLabel = false }: { title: string; retailer: string; showLabel?: boolean }) {
   const [resolving, setResolving] = useState(false);
 
   async function handleClick() {
@@ -117,10 +117,8 @@ function ViewButton({ title, retailer }: { title: string; retailer: string }) {
       const res = await fetch(`/api/item-link?title=${encodeURIComponent(title)}&retailer=${encodeURIComponent(retailer)}`);
       const data = await res.json();
       if (data.link) {
-        // Route through /go for affiliate tracking
         window.open(`/go?url=${encodeURIComponent(data.link)}&retailer=${encodeURIComponent(data.retailer || retailer)}&title=${encodeURIComponent(title)}`, "_blank");
       } else {
-        // Could not resolve — show toast instead of sending to Google
         toast.error("Could not find product page. Try searching the retailer directly.");
       }
     } catch {
@@ -131,8 +129,9 @@ function ViewButton({ title, retailer }: { title: string; retailer: string }) {
   }
 
   return (
-    <Button size="sm" variant="outline" onClick={handleClick} disabled={resolving} title="View best price">
+    <Button size="sm" variant="outline" onClick={handleClick} disabled={resolving}>
       {resolving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ExternalLink className="w-3.5 h-3.5" />}
+      {showLabel && <span className="ml-1.5">{resolving ? "Loading…" : "Best price"}</span>}
     </Button>
   );
 }
@@ -167,7 +166,7 @@ export default function RegistryClient({ registry, initialItems }: Props) {
 
     setSearching(true);
     setHasSearched(true);
-    setResultsVisible(false); // briefly hide for fade-in effect
+    setResultsVisible(true); // keep visible — no flash
 
     try {
       const res = await fetch(`/api/search?q=${encodeURIComponent(q.trim())}&page=1`, {
@@ -180,7 +179,7 @@ export default function RegistryClient({ registry, initialItems }: Props) {
       setSearchPage(1);
       setFromCache(data.cached || false);
       setCommittedQuery(q.trim());
-      requestAnimationFrame(() => setResultsVisible(true));
+      setResultsVisible(true);
     } catch (err: unknown) {
       if (err instanceof Error && err.name === "AbortError") return; // silently ignore cancelled requests
       toast.error(err instanceof Error ? err.message : "Search failed");
@@ -189,7 +188,9 @@ export default function RegistryClient({ registry, initialItems }: Props) {
     }
   }, []);
 
-  /** Debounce on every keystroke */
+  /** Debounce on every keystroke — skip if chip already triggered search */
+  const skipDebounceRef = useRef(false);
+
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
@@ -202,21 +203,26 @@ export default function RegistryClient({ registry, initialItems }: Props) {
       return;
     }
 
+    // Chip click already fired runSearch — skip the debounce this time
+    if (skipDebounceRef.current) {
+      skipDebounceRef.current = false;
+      return;
+    }
+
     debounceRef.current = setTimeout(() => {
       runSearch(searchQuery);
-    }, 300);
+    }, 400);
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, [searchQuery, runSearch]);
 
-  /** Trigger popular chip immediately (no debounce) */
+  /** Trigger popular chip immediately — set flag so debounce doesn't also fire */
   function handleChipClick(chip: string) {
+    skipDebounceRef.current = true;
     setSearchQuery(chip);
-    // Focus input for accessibility
     inputRef.current?.focus();
-    // Run immediately — bypass the debounce
     runSearch(chip);
   }
 
@@ -424,10 +430,7 @@ export default function RegistryClient({ registry, initialItems }: Props) {
 
           {/* Results grid — fades in */}
           {!searching && searchResults.length > 0 && (
-            <div
-              className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 transition-opacity duration-300"
-              style={{ opacity: resultsVisible ? 1 : 0 }}
-            >
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {searchResults.map((result, i) => (
                 <Card
                   key={i}
@@ -465,20 +468,30 @@ export default function RegistryClient({ registry, initialItems }: Props) {
                       )}
                     </div>
                     <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        className="flex-1"
-                        onClick={() => addToRegistry(result)}
-                        disabled={adding === result.title}
-                      >
-                        {adding === result.title ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <Plus className="w-3.5 h-3.5" />
-                        )}
-                        <span className="ml-1">{adding === result.title ? "Adding…" : "Add to list"}</span>
-                      </Button>
-                      <ViewButton title={result.title} retailer={result.retailer ?? ""} />
+                      {(() => {
+                        const alreadyAdded = myItems.some(i => i.title === result.title);
+                        return (
+                          <Button
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => !alreadyAdded && addToRegistry(result)}
+                            disabled={adding === result.title || alreadyAdded}
+                            variant={alreadyAdded ? "secondary" : "default"}
+                          >
+                            {adding === result.title ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : alreadyAdded ? (
+                              <CheckCircle className="w-3.5 h-3.5 text-green-600" />
+                            ) : (
+                              <Plus className="w-3.5 h-3.5" />
+                            )}
+                            <span className="ml-1">
+                              {adding === result.title ? "Adding…" : alreadyAdded ? "In your list" : "Add to list"}
+                            </span>
+                          </Button>
+                        );
+                      })()}
+                      <ViewButton title={result.title} retailer={result.retailer ?? ""} showLabel />
                     </div>
                   </CardContent>
                 </Card>
