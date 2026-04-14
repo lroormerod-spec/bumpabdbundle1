@@ -459,14 +459,11 @@ export default function RegistryClient({ registry, initialItems }: Props) {
                   </div>
                   <CardContent className="p-4">
                     <p className="font-medium text-sm line-clamp-2 mb-2 leading-snug">{result.title}</p>
-                    <div className="flex items-center justify-between mb-1">
+                    <div className="mb-1">
                       {result.price ? (
                         <span className="text-lg font-bold text-primary">{formatPrice(result.price)}</span>
                       ) : (
                         <span className="text-sm text-muted-foreground">Price unavailable</span>
-                      )}
-                      {result.retailer && (
-                        <span className="text-xs text-muted-foreground">{result.retailer}</span>
                       )}
                     </div>
                     {/* Price comparison — only show if we actually have other prices for this product */}
