@@ -125,14 +125,37 @@ function PriceDisplay({ result }: { result: SearchResult }) {
 
   useEffect(() => {
     if (!result.immersiveToken) return;
-    setLoading(true);
-    fetch(`/api/product-prices?token=${encodeURIComponent(result.immersiveToken)}`)
-      .then(r => r.json())
-      .then(data => {
-        if (!data.notFound && !data.error) setEnriched(data);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    let attempts = 0;
+    const MAX_ATTEMPTS = 5;
+    const RETRY_DELAY = 2000; // 2s between retries
+
+    async function poll() {
+      if (cancelled) return;
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/product-prices?token=${encodeURIComponent(result.immersiveToken!)}`);
+        const data = await res.json();
+        if (cancelled) return;
+        if (!data.notFound && !data.error) {
+          setEnriched(data);
+          setLoading(false);
+          return;
+        }
+        // Not ready yet — retry
+        attempts++;
+        if (attempts < MAX_ATTEMPTS) {
+          setTimeout(poll, RETRY_DELAY);
+        } else {
+          setLoading(false);
+        }
+      } catch {
+        setLoading(false);
+      }
+    }
+
+    poll();
+    return () => { cancelled = true; };
   }, [result.immersiveToken]);
 
   const displayPrice = enriched ? enriched.lowestPrice : result.price;
