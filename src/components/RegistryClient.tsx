@@ -121,36 +121,34 @@ function ResultSkeleton() {
 // Price card component that fetches real cheapest price
 function PriceDisplay({ result }: { result: SearchResult }) {
   const [enriched, setEnriched] = useState<EnrichedPrice | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(!!result.immersiveToken);
 
   useEffect(() => {
     if (!result.immersiveToken) return;
     let cancelled = false;
     let attempts = 0;
-    const MAX_ATTEMPTS = 5;
-    const RETRY_DELAY = 2000; // 2s between retries
+    const MAX_ATTEMPTS = 6;
+    const RETRY_DELAY = 2000;
 
     async function poll() {
       if (cancelled) return;
-      setLoading(true);
       try {
         const res = await fetch(`/api/product-prices?token=${encodeURIComponent(result.immersiveToken!)}`);
         const data = await res.json();
         if (cancelled) return;
         if (!data.notFound && !data.error) {
           setEnriched(data);
-          setLoading(false);
+          setChecking(false);
           return;
         }
-        // Not ready yet — retry
         attempts++;
         if (attempts < MAX_ATTEMPTS) {
           setTimeout(poll, RETRY_DELAY);
         } else {
-          setLoading(false);
+          setChecking(false);
         }
       } catch {
-        setLoading(false);
+        setChecking(false);
       }
     }
 
@@ -161,52 +159,73 @@ function PriceDisplay({ result }: { result: SearchResult }) {
   const displayPrice = enriched ? enriched.lowestPrice : result.price;
   const displayRetailer = enriched ? enriched.lowestRetailer : result.retailer;
 
+  // Calculate saving vs most expensive retailer
+  const saving = enriched && enriched.allPrices.length > 1
+    ? enriched.allPrices[enriched.allPrices.length - 1].price - enriched.lowestPrice
+    : 0;
+  const savingRetailer = enriched && enriched.allPrices.length > 1
+    ? enriched.allPrices[enriched.allPrices.length - 1].retailer.split(" ")[0]
+    : null;
+
   return (
     <>
-      <div className="mb-1">
-        <div className="flex items-center gap-2">
-          {displayPrice ? (
-            <span className="text-lg font-bold text-primary">{formatPrice(displayPrice)}</span>
-          ) : (
-            <span className="text-sm text-muted-foreground">Price unavailable</span>
-          )}
-          {loading && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
-        </div>
+      {/* Price */}
+      <div className="mb-2">
+        {displayPrice ? (
+          <span className="text-xl font-bold text-primary">{formatPrice(displayPrice)}</span>
+        ) : (
+          <span className="text-sm text-muted-foreground">Price unavailable</span>
+        )}
       </div>
+
+      {/* Trust signal */}
       <div className="mb-3">
-        {enriched && enriched.retailerCount > 1 ? (
-          <>
-            <p className="text-[10px] text-green-700 font-medium mb-1">
-              Cheapest from {enriched.retailerCount} retailers
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {enriched.allPrices.slice(0, 3).map((p, i) => (
-                <span key={i} className={`text-[10px] rounded px-1.5 py-0.5 ${
-                  i === 0 ? "bg-green-50 text-green-700 font-medium" : "bg-muted text-muted-foreground"
+        {checking ? (
+          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+            <Loader2 className="w-2.5 h-2.5 animate-spin" />
+            Checking prices across UK retailers...
+          </div>
+        ) : enriched && enriched.retailerCount > 1 ? (
+          <div className="space-y-1.5">
+            {/* Best price badge */}
+            <div className="flex items-center gap-1.5">
+              <span className="inline-flex items-center gap-1 bg-green-600 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                ✓ Best price from {enriched.retailerCount} retailers
+              </span>
+              {saving > 1 && savingRetailer && (
+                <span className="text-[10px] text-green-700 font-medium">
+                  Save {formatPrice(saving)} vs {savingRetailer}
+                </span>
+              )}
+            </div>
+            {/* Retailer price pills */}
+            <div className="flex flex-wrap gap-1">
+              {enriched.allPrices.slice(0, 4).map((p, i) => (
+                <span key={i} className={`text-[10px] rounded-full px-2 py-0.5 border ${
+                  i === 0
+                    ? "bg-green-50 border-green-200 text-green-800 font-semibold"
+                    : "bg-muted border-border text-muted-foreground"
                 }`}>
                   {p.retailer.split(" ")[0]} {formatPrice(p.price)}
                 </span>
               ))}
-              {enriched.allPrices.length > 3 && (
-                <span className="text-[10px] text-muted-foreground">+{enriched.allPrices.length - 3} more</span>
+              {enriched.allPrices.length > 4 && (
+                <span className="text-[10px] text-muted-foreground self-center">+{enriched.allPrices.length - 4} more</span>
               )}
             </div>
-          </>
+          </div>
+        ) : enriched && enriched.retailerCount === 1 ? (
+          <span className="text-[10px] text-muted-foreground">Only available at {displayRetailer}</span>
         ) : result.otherPrices && result.otherPrices.length > 0 ? (
-          <>
-            <p className="text-[10px] text-muted-foreground mb-1">
-              Also at {result.otherPrices.length} other {result.otherPrices.length === 1 ? "retailer" : "retailers"}
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {result.otherPrices.map((op, i) => (
-                <span key={i} className="text-[10px] bg-muted rounded px-1.5 py-0.5 text-muted-foreground">
-                  {op.retailer.split(" ")[0]} {formatPrice(op.price)}
-                </span>
-              ))}
-            </div>
-          </>
+          <div className="flex flex-wrap gap-1">
+            {result.otherPrices.map((op, i) => (
+              <span key={i} className="text-[10px] bg-muted border border-border rounded-full px-2 py-0.5 text-muted-foreground">
+                {op.retailer.split(" ")[0]} {formatPrice(op.price)}
+              </span>
+            ))}
+          </div>
         ) : (
-          <p className="text-[10px] text-muted-foreground">From {displayRetailer}</p>
+          <span className="text-[10px] text-muted-foreground">From {displayRetailer}</span>
         )}
       </div>
     </>
@@ -490,6 +509,14 @@ export default function RegistryClient({ registry, initialItems }: Props) {
         {/* ─── SEARCH TAB ─── */}
         <TabsContent value="search" className="mt-4 space-y-5">
 
+          {/* Trust bar */}
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-green-50 border border-green-100">
+            <span className="text-green-700 text-xs">✓</span>
+            <p className="text-xs text-green-800">
+              <span className="font-semibold">We check prices live</span> across Amazon, John Lewis, Argos, Mamas &amp; Papas, Boots, Smyths and more — so you always get the best deal.
+            </p>
+          </div>
+
           {/* Popular searches — shown when input is empty */}
           {showIdleState && (
             <div className="flex flex-wrap items-center gap-2">
@@ -555,11 +582,7 @@ export default function RegistryClient({ registry, initialItems }: Props) {
                         <ShoppingBag className="w-10 h-10 text-muted-foreground" />
                       </div>
                     )}
-                    {result.isLowest && (
-                      <div className="absolute top-2 left-2 bg-green-600 text-white text-xs font-semibold px-2 py-1 rounded-lg shadow flex items-center gap-1">
-                        <span>🏷️</span> Best price
-                      </div>
-                    )}
+
                   </div>
                   <CardContent className="p-4">
                     <p className="font-medium text-sm line-clamp-2 mb-2 leading-snug">{result.title}</p>
