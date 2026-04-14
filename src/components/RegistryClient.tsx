@@ -464,7 +464,7 @@ export default function RegistryClient({ registry, initialItems }: Props) {
                         <span className="text-sm text-muted-foreground">Price unavailable</span>
                       )}
                       {result.retailer && (
-                        <span className="text-xs text-muted-foreground truncate ml-2 max-w-[100px]">{result.retailer}</span>
+                        <span className="text-xs text-muted-foreground ml-2">{result.retailer}</span>
                       )}
                     </div>
                     <div className="flex gap-2">
