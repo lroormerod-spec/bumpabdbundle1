@@ -91,8 +91,8 @@ export default function GiftConfirmPage() {
     }
   }
 
-  const buyUrl = data?.item?.url
-    ? `/go?url=${encodeURIComponent(data.item.url)}&retailer=${encodeURIComponent(data.item.retailer ?? "")}&title=${encodeURIComponent(data.item.title)}`
+  const buyUrl = data?.item?.title
+    ? `/api/item-link?title=${encodeURIComponent(data.item.title)}&retailer=${encodeURIComponent(data.item.retailer ?? "")}&redirect=1`
     : null;
 
   return (

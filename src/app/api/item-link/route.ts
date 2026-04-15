@@ -65,6 +65,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const title = searchParams.get("title");
   const retailer = searchParams.get("retailer") || undefined;
+  const redirect = searchParams.get("redirect") === "1";
 
   if (!title) return NextResponse.json({ error: "Title required" }, { status: 400 });
 
@@ -88,9 +89,9 @@ export async function GET(request: NextRequest) {
   try {
     const result = await resolveViaImmersive(title, retailer);
     if (result) {
-      // Cache it async
       sql`INSERT INTO link_cache (cache_key, direct_url, retailer_name) VALUES (${cacheKey}, ${result.url}, ${result.retailerName})
           ON CONFLICT (cache_key) DO UPDATE SET direct_url = EXCLUDED.direct_url, created_at = NOW()`.catch(() => {});
+      if (redirect) return NextResponse.redirect(new URL(`/go?url=${encodeURIComponent(result.url)}&retailer=${encodeURIComponent(result.retailerName)}&title=${encodeURIComponent(title)}`, request.url));
       return NextResponse.json({ link: result.url, retailer: result.retailerName });
     }
   } catch (e) { console.error("Tier 1 failed:", e); }
@@ -101,6 +102,7 @@ export async function GET(request: NextRequest) {
     if (result) {
       sql`INSERT INTO link_cache (cache_key, direct_url, retailer_name) VALUES (${cacheKey}, ${result.url}, ${result.retailerName})
           ON CONFLICT (cache_key) DO UPDATE SET direct_url = EXCLUDED.direct_url, created_at = NOW()`.catch(() => {});
+      if (redirect) return NextResponse.redirect(new URL(`/go?url=${encodeURIComponent(result.url)}&retailer=${encodeURIComponent(result.retailerName)}&title=${encodeURIComponent(title)}`, request.url));
       return NextResponse.json({ link: result.url, retailer: result.retailerName });
     }
   } catch (e) { console.error("Tier 2 failed:", e); }
@@ -112,12 +114,17 @@ export async function GET(request: NextRequest) {
       if (result) {
         sql`INSERT INTO link_cache (cache_key, direct_url, retailer_name) VALUES (${cacheKey}, ${result.url}, ${result.retailerName})
             ON CONFLICT (cache_key) DO UPDATE SET direct_url = EXCLUDED.direct_url, created_at = NOW()`.catch(() => {});
+        if (redirect) return NextResponse.redirect(new URL(`/go?url=${encodeURIComponent(result.url)}&retailer=${encodeURIComponent(result.retailerName)}&title=${encodeURIComponent(title)}`, request.url));
         return NextResponse.json({ link: result.url, retailer: result.retailerName });
       }
     } catch (e) { console.error("Tier 3 failed:", e); }
   }
 
-  // ── All tiers failed — log and return null ──────────────────────────────
+  // ── All tiers failed ─────────────────────────────────────────────────────
   sql`INSERT INTO link_failures (product_title, retailer, reason) VALUES (${title}, ${retailer || null}, 'all_tiers_failed')`.catch(() => {});
+  if (redirect) {
+    // Last resort — Google search for the product
+    return NextResponse.redirect(new URL(`https://www.google.co.uk/search?q=${encodeURIComponent(title + " buy UK")}`, request.url));
+  }
   return NextResponse.json({ link: null, retailer: null });
 }

@@ -178,9 +178,13 @@ export default function SharePageClient({ registry, registryItems, ownerName, ex
     }
   }
 
-  const buyUrl = selectedItem?.url
-    ? `/go?url=${encodeURIComponent(selectedItem.url)}&retailer=${encodeURIComponent(selectedItem.retailer ?? "")}&title=${encodeURIComponent(selectedItem.title)}`
-    : null;
+  // Build buy URL — resolve via item-link if needed (stored URLs may be Google Shopping)
+  function getBuyUrl(item: Item): string | null {
+    if (!item.url) return null;
+    // Always route through item-link resolver which handles Google URLs and returns real retailer URL
+    return `/api/item-link?title=${encodeURIComponent(item.title)}&retailer=${encodeURIComponent(item.retailer ?? "")}&redirect=1`;
+  }
+  const buyUrl = selectedItem ? getBuyUrl(selectedItem) : null;
 
   return (
     <div className="min-h-screen bg-background">
